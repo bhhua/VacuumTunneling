@@ -1,6 +1,6 @@
 (* ::Package:: *)
 
-(* ::Section::Closed:: *)
+(* ::Section:: *)
 (*BeginPackge*)
 
 
@@ -11,11 +11,11 @@
 BeginPackage["VacuumTunneling`"]
 
 
-(* ::Subsection::Closed:: *)
+(* ::Subsection:: *)
 (*Public Functions*)
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*Tunneling*)
 
 
@@ -27,6 +27,7 @@ Tunneling;
 Options[Tunneling] = {
   Dimension -> 4,
   TimesToFind->50,
+  TimesToDefom->20,
   RelativeAccuracy->1/100,
   NumbericalPotential->False,
   NumbericalRenormalization->False,
@@ -48,7 +49,7 @@ Off[NIntegrate::inumr];
 (*Code*)
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*Tunneling*)
 
 
@@ -65,10 +66,10 @@ Which[Length[fields]==Length[Vacuum1]==Length[Vacuum2]==0,
         Is1DTunneling=False;
         Which[OptionValue[NumbericalPotential]==False && OptionValue[NumbericalRenormalization]==False,
                 b=T2[potential, renormalization, fields, Vacuum1, Vacuum2,
-                OptionValue[Dimension],OptionValue[BarrierBetweenVacuums],OptionValue[TimesToFind],OptionValue[RelativeAccuracy],OptionValue[NumbericalPotential],OptionValue[NumbericalRenormalization],OptionValue[PointsNumber]],
+                OptionValue[Dimension],OptionValue[BarrierBetweenVacuums],OptionValue[TimesToFind],OptionValue[RelativeAccuracy],OptionValue[NumbericalPotential],OptionValue[NumbericalRenormalization],OptionValue[PointsNumber],OptionValue[TimesToDefom]],
              OptionValue[NumbericalPotential]==True || OptionValue[NumbericalRenormalization]==True,
                 b=nT2[potential, renormalization, fields, Vacuum1, Vacuum2,
-                OptionValue[Dimension],OptionValue[BarrierBetweenVacuums],OptionValue[TimesToFind],OptionValue[RelativeAccuracy],OptionValue[NumbericalPotential],OptionValue[NumbericalRenormalization],OptionValue[PointsNumber]]
+                OptionValue[Dimension],OptionValue[BarrierBetweenVacuums],OptionValue[TimesToFind],OptionValue[RelativeAccuracy],OptionValue[NumbericalPotential],OptionValue[NumbericalRenormalization],OptionValue[PointsNumber],OptionValue[TimesToDefom]]
         ];
         Return[{b[[2]],b[[3]]}],
       True,Print["Number of fields has to be same as dimension of vacuums."]]]
@@ -96,14 +97,17 @@ T1[potential_, renormalization_, fields_, Vacuum1_, Vacuum2_,
 ];
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*T2*)
 
 
 T2[potential_, renormalization_, fields_, Vacuum1_, Vacuum2_, 
  Dimension_, BarrierBetweenVacuums_,
- TimesToFind_, RelativeAccuracy_, NumbericalPotential_, NumbericalRenormalization_, nofpoints_]:=
-Module[{v,z,dov,TrueVacuum,FalseVacuum,line,vt,zt,dv,dvdf,dz,dzdf,s,tmaxfn,amaxfn,k,n,tnpts,tpts,tds,l,tls,tps,tp2,tpp,q,stay,staynumber,sp,rs,fps,ts,fr,npts,segments,vs,zs},
+ TimesToFind_, RelativeAccuracy_, NumbericalPotential_, NumbericalRenormalization_, nofpoints_,TimesDefom_]:=
+Module[{v,z,dov,TrueVacuum,FalseVacuum,
+line,vt,zt,dv,dvdf,dz,dzdf,s,
+tmaxfn,amaxfn,k,n,tnpts,tpts,tds,l,tls,tps,tp2,tpp,
+lastconvergence,alwaysconvergence,q,stay,staynumber,sp,rs,fps,ts,fr,npts,segments,vs,zs},
 
 v=Function[fields,potential];
 z=Function[fields,renormalization];
@@ -138,8 +142,10 @@ tp2=tps[[1]]*tps[[1]];
 tpp=tps[[2]];
 q=0;
 staynumber=0;
-
-While[q<20,q++;
+alwaysconvergence=True;
+While[q<TimesDefom,q++;
+lastconvergence=s[[4]];
+alwaysconvergence=alwaysconvergence&&lastconvergence;
 
 {npts,stay}=defom[tpts,tp2,tpp,z,dvdf,dzdf];
 
@@ -170,20 +176,29 @@ tp2=tps[[1]]*tps[[1]];
 tpp=tps[[2]];
 tpts=npts;
 ];
-If[q>=20,Print["Path deformation failed."]];
-If[s[[4]]==False,Print["Reach max steps in 1d tunneling. The result may be incorrect. "]];
+If[q>=20,
+    Print["Path deformation can not complete in given times. The result may be incorrect."]
+];
+If[lastconvergence==False,
+    Print["Reach max steps in 1d tunneling. The result may be incorrect. "],
+    If[alwaysconvergence==False,
+        Print["Reach accuracy in final step, but did not in some intermediate path."]
+    ]
+];
 WriteString["stdout","\[EmptyCircle]"];
 Return[{s[[1]],fr,s[[3]]}]]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*nT2*)
 
 
 nT2[potential_, renormalization_, fields_, Vacuum1_, Vacuum2_,
  Dimension_, BarrierBetweenVacuums_,
- TimesToFind_, RelativeAccuracy_, NumbericalPotential_, NumbericalRenormalization_, nofpoints_]:=
-Module[{v,z,line,dov,TrueVacuum,FalseVacuum,xt,yt,vt,zt,s,tmaxfn,amaxfn,k,n,tnpts,tpts,segments,tds,l,tls,tps,tp2,tpp,q,stay,staynumber,sp,rs,fps,ts,fr,npts,vs,zs},
+ TimesToFind_, RelativeAccuracy_, NumbericalPotential_, NumbericalRenormalization_, nofpoints_,TimesDefom_]:=
+Module[{v,z,line,dov,TrueVacuum,FalseVacuum,
+xt,yt,vt,zt,s,tmaxfn,amaxfn,k,n,tnpts,tpts,segments,tds,l,tls,tps,tp2,tpp,
+lastconvergence,alwaysconvergence,q,stay,staynumber,sp,rs,fps,ts,fr,npts,vs,zs},
 
 v=Function[fields,potential];
 z=Function[fields,renormalization];
@@ -213,7 +228,10 @@ tp2=tps[[1]]*tps[[1]];
 tpp=tps[[2]];
 q=0;
 staynumber=0;
-While[q<20,q++;
+alwaysconvergence=True;
+While[q<TimesDefom,q++;
+lastconvergence=s[[4]];
+alwaysconvergence=alwaysconvergence&&lastconvergence;
 {npts,stay}=ndefom[tpts,tp2,tpp,v,z,dov];
 If[stay==0,staynumber=0,staynumber++];
 If[staynumber>=2,
@@ -240,8 +258,15 @@ tp2=tps[[1]]*tps[[1]];
 tpp=tps[[2]];
 tpts=npts;
 ];
-If[q>=20,Print["Path deformation failed."]];
-If[s[[4]]==False,Print["Reach max steps in 1d tunneling. The result may be incorrect. "]];
+If[q>=20,
+    Print["Path deformation can not complete in given times. The result may be incorrect."]
+];
+If[lastconvergence==False,
+    Print["Reach max steps in 1d tunneling. The result may be incorrect. "],
+    If[alwaysconvergence==False,
+        Print["Reach accuracy in final step, but did not in some intermediate path."]
+    ]
+];
 WriteString["stdout","\[EmptyCircle]"];
 Return[{s[[1]],fr,s[[3]]}]]
 
@@ -262,7 +287,7 @@ Return[db]
 ]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*force*)
 
 
