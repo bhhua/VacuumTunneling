@@ -10,7 +10,7 @@ whose corrsponding equation of motion reads
 
 $$\frac{d^2 \sigma}{dr^2}+\frac{D-1}{r} \frac{d\sigma}{dr}-\frac{1}{2}\frac{\partial \mathrm{log} Z_{\sigma}}{\partial \sigma} \left(\frac{d\sigma}{dr}\right)^2 = Z_{\sigma}\frac{\partial V_{eff}}{\partial \sigma}.$$
 
-For more details, see [蓝色的字](https:// "VacuumTunneling: A package to solve bonce equation with renormalization factor")
+For more details, see [蓝色的字](https://网址 "VacuumTunneling: A package to solve bonce equation with renormalization factor")
 
 #### Installation and Running Guide
 
@@ -42,7 +42,13 @@ true vacuum, false vacuum]`:
 a = Tunneling[V[x], Z[x], x, tv, fv]
 ```
 
+An array of 2 elements will be outputted as the result:
+
+<img src="https://github.com/bhhua/VacuumTunneling/blob/main/images/basicexampleout.png" width="450px">
+
+To extract the content, use the code
+
 ```
-Plot[a[[1]][r], {r, 0, 8.01}]
+Plot[a[[1]][r], {r, 0, 7.57}]
 Se = a[[2]]
 ```
