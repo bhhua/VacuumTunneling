@@ -4,7 +4,7 @@
 (*BeginPackge*)
 
 
-(* ::Subsection::Closed:: *)
+(* ::Subsection:: *)
 (*BeginPackge*)
 
 
@@ -29,14 +29,14 @@ Options[Tunneling] = {
   TimesToFind->50,
   TimesToDefom->20,
   RelativeAccuracy->1/100,
-  NumbericalPotential->False,
-  NumbericalRenormalization->False,
+  NumericalPotential->False,
+  NumericalRenormalization->False,
   PointsNumber->100,
   BarrierBetweenVacuums->Null,
   StepScale->1};
 
 
-(* ::Subsection::Closed:: *)
+(* ::Subsection:: *)
 (*BeginPrivate*)
 
 
@@ -62,22 +62,22 @@ Which[Length[fields]==Length[Vacuum1]==Length[Vacuum2]==0,
         b=T1[potential,renormalization,fields,Vacuum1,Vacuum2,
         OptionValue[Dimension],OptionValue[BarrierBetweenVacuums],
         OptionValue[TimesToFind],OptionValue[RelativeAccuracy],OptionValue[StepScale],
-        OptionValue[NumbericalPotential],OptionValue[NumbericalRenormalization]];
+        OptionValue[NumericalPotential],OptionValue[NumericalRenormalization]];
         If[b[[4]]==False,Print["Fail to find within given times. The result may be incorrect. Please increase option 'TimesToFind' or reduce 'RelativeAccuracy'"]];
         Return[{b[[1]],b[[3]]}],
       Length[fields]==Length[Vacuum1]==Length[Vacuum2]>1,
         Is1DTunneling=False;
-        Which[OptionValue[NumbericalPotential]==False && OptionValue[NumbericalRenormalization]==False,
+        Which[OptionValue[NumericalPotential]==False && OptionValue[NumericalRenormalization]==False,
                 b=T2[potential, renormalization, fields, Vacuum1, Vacuum2,
                 OptionValue[Dimension],OptionValue[BarrierBetweenVacuums],
                 OptionValue[TimesToFind],OptionValue[RelativeAccuracy],OptionValue[StepScale],
-                OptionValue[NumbericalPotential],OptionValue[NumbericalRenormalization],
+                OptionValue[NumericalPotential],OptionValue[NumericalRenormalization],
                 OptionValue[PointsNumber],OptionValue[TimesToDefom]],
-             OptionValue[NumbericalPotential]==True || OptionValue[NumbericalRenormalization]==True,
+             OptionValue[NumericalPotential]==True || OptionValue[NumericalRenormalization]==True,
                 b=nT2[potential, renormalization, fields, Vacuum1, Vacuum2,
                 OptionValue[Dimension],OptionValue[BarrierBetweenVacuums],
                 OptionValue[TimesToFind],OptionValue[RelativeAccuracy],OptionValue[StepScale],
-                OptionValue[NumbericalPotential],OptionValue[NumbericalRenormalization],
+                OptionValue[NumericalPotential],OptionValue[NumericalRenormalization],
                 OptionValue[PointsNumber],OptionValue[TimesToDefom]]
         ];
         Return[{b[[2]],b[[3]]}],
@@ -111,7 +111,7 @@ T1[potential_, renormalization_, fields_, Vacuum1_, Vacuum2_,
       NumbericalPotentialNumbericalRnormalization[potential, renormalization, fields, Vacuum1, Vacuum2, 
                                                   BarrierBetweenVacuums, Dimension, 
                                                   TimesToFind, RelativeAccuracy, StepScale],
-  True,Print[ "Options 'NumbericalPotential' and 'NumbericalRenormalization' should be 'True' or 'False'." ]
+  True,Print[ "Options 'NumericalPotential' and 'NumericalRenormalization' should be 'True' or 'False'." ]
 ];
 
 
@@ -124,7 +124,7 @@ T2[potential_, renormalization_, fields_, Vacuum1_, Vacuum2_,
  TimesToFind_, RelativeAccuracy_, StepScale_, 
  NumbericalPotential_, NumbericalRenormalization_, nofpoints_,TimesDefom_]:=
 Module[{v,z,dov,TrueVacuum,FalseVacuum,
-line,vt,zt,dv,dvdf,dz,dzdf,s,
+line,vt,barrier1d,zt,dv,dvdf,dz,dzdf,s,
 tmaxfn,amaxfn,k,n,tnpts,tpts,tds,l,tls,tps,tp2,tpp,
 lastconvergence,alwaysconvergence,q,stay,staynumber,sp,rs,fps,ts,fr,npts,segments,vs,zs},
 
@@ -135,10 +135,10 @@ dov=Norm[Vacuum1-Vacuum2];
 line=Function[t,FalseVacuum+(TrueVacuum-FalseVacuum)/dov t];
 
 vt[t_]=v@@line[t];
-zt[t_]=z@@line[t];
+barrier1d = t/.Last[FindMaximum[{vt[t],0<t<dov},t]];
+If[dov>10 Norm[line[barrier1d]-FalseVacuum],TrueVacuum=line[10barrier1d];dov=10barrier1d];
 
-(*dvdf=ndgrad[potential,fields];
-dzdf=ndgrad[renormalization,fields];*)
+zt[t_]=z@@line[t];
 
 dvdf=Function[fields,Evaluate@Grad[potential,fields]];
 dzdf=Function[fields,Evaluate@Grad[renormalization,fields]];
@@ -201,7 +201,7 @@ tp2=tps[[1]]*tps[[1]];
 tpp=tps[[2]];
 tpts=npts;
 ];
-If[q>=20,
+If[q>=TimesDefom,
     Print["Path deformation can not complete in given times. The result may be incorrect."]
 ];
 If[lastconvergence==False,
@@ -222,8 +222,8 @@ nT2[potential_, renormalization_, fields_, Vacuum1_, Vacuum2_,
  Dimension_, BarrierBetweenVacuums_,
  TimesToFind_, RelativeAccuracy_, StepScale_,
  NumbericalPotential_, NumbericalRenormalization_, nofpoints_,TimesDefom_]:=
-Module[{v,z,line,dov,TrueVacuum,FalseVacuum,
-xt,yt,vt,zt,s,tmaxfn,amaxfn,k,n,tnpts,tpts,segments,tds,l,tls,tps,tp2,tpp,
+Module[{v,z,line,dov,TrueVacuum,FalseVacuum,lxx,
+xt,yt,vt,barrier1d,zt,s,tmaxfn,amaxfn,k,n,tnpts,tpts,segments,tds,l,tls,tps,tp2,tpp,
 lastconvergence,alwaysconvergence,q,stay,staynumber,sp,rs,fps,ts,fr,npts,vs,zs},
 
 v=Function[fields,potential];
@@ -232,8 +232,14 @@ z=Function[fields,renormalization];
 If[v@@Vacuum1>v@@Vacuum2,FalseVacuum=Vacuum1;TrueVacuum=Vacuum2;,FalseVacuum=Vacuum2;TrueVacuum=Vacuum1;];
 dov=Norm[Vacuum1-Vacuum2];
 line=Function[t,FalseVacuum+(TrueVacuum-FalseVacuum)/dov t];
+lxx[x_]:=(TrueVacuum[[2]]-FalseVacuum[[2]])/(TrueVacuum[[1]]-FalseVacuum[[1]])*(x-FalseVacuum[[1]])+FalseVacuum[[2]];
 
 vt[t_]=v@@line[t];
+
+barrier1d = t/.Last[FindMaximum[{vt[t],0<t<dov},t]];
+
+If[dov>10 Norm[line[barrier1d]-FalseVacuum],TrueVacuum=line[10barrier1d];dov=10barrier1d];
+
 zt[t_]=z@@line[t];
 
 
@@ -258,10 +264,12 @@ tpp=tps[[2]];
 q=0;
 staynumber=0;
 alwaysconvergence=True;
+
 While[q<TimesDefom,q++;
 lastconvergence=s[[4]];
 alwaysconvergence=alwaysconvergence&&lastconvergence;
 {npts,stay}=ndefom[tpts,tp2,tpp,v,z,dov];
+
 If[stay==0,staynumber=0,staynumber++];
 If[staynumber>=2,
 sp=Interpolation[Transpose[{tls,tpts}]];
@@ -290,7 +298,7 @@ tp2=tps[[1]]*tps[[1]];
 tpp=tps[[2]];
 tpts=npts;
 ];
-If[q>=20,
+If[q>=TimesDefom,
     Print["Path deformation can not complete in given times. The result may be incorrect."]
 ];
 If[lastconvergence==False,
@@ -402,7 +410,6 @@ gzr=dzr/deltaphi;
 gzl=dzl/deltaphi;
 gz=Transpose[(gzr+gzl)/2];
 
-
 gvmax=Max[Abs[gv]];
 
 fg=-ddtdr*gz/zs/2-zs*gv;
@@ -444,7 +451,7 @@ stepsize=instepsize;
 f1=nforce[points,dtdr2,ddtdr,v,z,dov];
 fmax=Max[Abs[f1[[1]]]];
 fratio=fmax/f1[[2]];
-While[True,(*Print["."];*)
+While[True,
 points2=points+f1[[1]]*stepsize*0.5;
 f2=nforce[points2,dtdr2,ddtdr,v,z,dov][[1]];
 If[stepsize<=minstep,stepsize=minstep;Break[]];
@@ -481,6 +488,7 @@ pts=nextis[[1]];
 stepsize=1.5*nextis[[2]];
 fratio=nextis[[3]];
 ];
+
 If[j<=1,k++];
 
 WriteString["stdout","\:2219"];
@@ -521,6 +529,7 @@ pts=points;
 j=0;
 k=0;
 fratio=1;
+
 While[j<=500&&fratio>=0.02,j++;
 nextis=nstep[pts,dtdr2,ddtdr,stepsize,v,z,dov];
 pts=nextis[[1]];
@@ -550,9 +559,10 @@ Module[{OriginalFunctionOfPotential,OriginalFunctionOfRenormalization,
   \[Phi]max=If[Abs[TrueVacuum-barrier]>10Abs[barrier-FalseVacuum],10(barrier-FalseVacuum)+FalseVacuum,TrueVacuum];
   PotentialAtFalseVacuum=OriginalFunctionOfPotential[FalseVacuum];
   FunctionOfRelativePotential=OriginalFunctionOfPotential[#]-PotentialAtFalseVacuum &;
-  bigv=0.04*Abs[FunctionOfRelativePotential@\[Phi]max];
-  (*Normalize the potential. Choosing a small factor can increase calculation speed but reduce accuracy. 0.04 makes both speed and accuracy acceptable*)
+  bigv=Abs[FunctionOfRelativePotential@\[Phi]max]/0.04;
+  (*Rescale the potential. *)
   \[Alpha]=Sqrt[bigv];
+  
   NormalizedPotential=FunctionOfRelativePotential[#]/bigv &;
   
   InitialFieldAndBigR=FindInitialFieldAndBigR[NormalizedPotential,OriginalFunctionOfRenormalization,\[Phi]max,FalseVacuum,
@@ -588,9 +598,10 @@ Module[{OriginalExpressionOfPotential,OriginalFunctionOfPotential,AnalyticalFunc
   OriginalFunctionOfRenormalization=Function[thefield,renormalization/.{fieldname->thefield}];
   PotentialAtFalseVacuum=AnalyticalFunctionOfPotential[FalseVacuum];
   FunctionOfRelativePotential=AnalyticalFunctionOfPotential[#]-PotentialAtFalseVacuum &;
-  bigv=0.04*Abs[FunctionOfRelativePotential@\[Phi]max];
+  bigv=Abs[FunctionOfRelativePotential@\[Phi]max]/0.04;
   \[Alpha]=Sqrt[bigv];
   NormalizedPotential=FunctionOfRelativePotential[#]/bigv &;
+  
   InitialFieldAndBigR=FindInitialFieldAndBigR[NormalizedPotential,OriginalFunctionOfRenormalization,\[Phi]max,FalseVacuum,
                                               barrier,dimension,times, accuracy,StepScale];
   FieldAndDerivative=GetFieldPoints[NormalizedPotential, OriginalFunctionOfRenormalization, \[Phi]max, FalseVacuum, 
@@ -625,7 +636,7 @@ Module[{OriginalFunctionOfPotential,OriginalFunctionOfRenormalization,OriginalEx
   OriginalExpressionOfRnormalization[fieldname_?NumericQ]=renormalization;
   OriginalFunctionOfRenormalization=Function[thefield,OriginalExpressionOfRnormalization[thefield]];
   AnalyticalFunctionOfRnormalization=InterpolationInArea[OriginalFunctionOfRenormalization,\[Phi]max,FalseVacuum,barrier];
-  bigv=0.04*Abs[FunctionOfRelativePotential@\[Phi]max];
+  bigv=Abs[FunctionOfRelativePotential@\[Phi]max]/0.04;
   \[Alpha]=Sqrt[bigv];
   NormalizedPotential=FunctionOfRelativePotential[#]/bigv &;
   InitialFieldAndBigR=FindInitialFieldAndBigR[NormalizedPotential,AnalyticalFunctionOfRnormalization,\[Phi]max,FalseVacuum,
@@ -665,7 +676,7 @@ Module[{OriginalExpressionOfpotential,OriginalFunctionOfPotential,AnalyticalFunc
   
   PotentialAtFalseVacuum=AnalyticalFunctionOfPotential[FalseVacuum];
   FunctionOfRelativePotential=AnalyticalFunctionOfPotential[#]-PotentialAtFalseVacuum &;
-  bigv=0.04*Abs[FunctionOfRelativePotential@\[Phi]max];
+  bigv=Abs[FunctionOfRelativePotential@\[Phi]max]/0.04;
   \[Alpha]=Sqrt[bigv];
   NormalizedPotential=FunctionOfRelativePotential[#]/bigv &;
   
@@ -692,7 +703,8 @@ InterpolationInArea[NumbericalFunction_,TrueVacuum_,FalseVacuum_,barrier_]:=
   n=1000;
   \[Phi]max=If[Abs[TrueVacuum-barrier]>10Abs[barrier-FalseVacuum],10(barrier-FalseVacuum)+FalseVacuum,TrueVacuum];
   dx=(\[Phi]max-FalseVacuum)/n;
-  Functionpts=ParallelTable[Quiet[{(i-2)*dx+FalseVacuum,NumbericalFunction[(i-2)*dx+FalseVacuum]}],{i,(n+3)},DistributedContexts-> {"VacuumTunneling`Private`"}];
+  Functionpts=ParallelTable[Off[NIntegrate::inumr];Quiet[{(i-1)*dx+FalseVacuum,NumbericalFunction[(i-1)*dx+FalseVacuum]}],{i,(n+100)},DistributedContexts-> {"VacuumTunneling`Private`"}];
+  
   ifun1=Interpolation[Cases[Functionpts,{_,_?NumericQ}]];
   
   Return[ifun1]
@@ -710,16 +722,21 @@ FindInitialFieldAndBigR[AnalyticalPotential_, AnalyticalRenormalization_, TrueVa
   \[Phi]max=TrueVacuum;
   sign=Sign[\[Phi]max-FalseVacuum];
   
-  While[Block[{y},AnalyticalPotential'[y]/.{y->\[Phi]max}]*sign>0 && Block[{y},AnalyticalPotential[y]/.{y->\[Phi]max}]<Block[{y},AnalyticalPotential[y]/.{y->FalseVacuum}],
-  \[Phi]max=\[Phi]max+sign*(barrier-\[Phi]max)*10^(-6)];
+  (*While[Block[{y},AnalyticalPotential'[y]/.{y->\[Phi]max}]*sign>0 && Block[{y},AnalyticalPotential[y]/.{y->\[Phi]max}]<Block[{y},AnalyticalPotential[y]/.{y->FalseVacuum}],
+  \[Phi]max=\[Phi]max+sign*(barrier-\[Phi]max)*10^(-10)];*)
+  If[Block[{thefield},AnalyticalPotential'[thefield]/.{thefield->\[Phi]max}]*sign>0,
+     \[Phi]max=thefield/.FindRoot[AnalyticalPotential'[thefield]==0,{thefield,\[Phi]max}]];
   (*to prevent wrong true vacuum, which makes the field rolling far away from false vacuum.*)
   
+  
   absolutefieldaccuracy=Abs[barrier-FalseVacuum]*accuracy;
-  absolutederivativeaccuracy=Abs[barrier-FalseVacuum]*accuracy^2;
-  basicdr=Abs[\[Phi]max-FalseVacuum]*accuracy*0.05;
+  absolutederivativeaccuracy = accuracy/(5 Sqrt[dimension]);
+  basicdr= Sqrt[Abs[dimension (\[Phi]max-FalseVacuum)^2/0.04]]/2000;
+  
   d\[Phi]=1;
   weib=1;weim=1;
   \[Phi]=(weib barrier+weim \[Phi]max)/(weib+weim);
+  dr=basicdr * StepScale;
 
   While[(Abs[\[Phi]-FalseVacuum]>=absolutefieldaccuracy||Abs[d\[Phi]]>=absolutederivativeaccuracy)&&Log[2,weib+weim]<=times,
   \[Phi]0=(weib barrier+weim \[Phi]max)/(weib+weim);
@@ -733,9 +750,9 @@ FindInitialFieldAndBigR[AnalyticalPotential_, AnalyticalRenormalization_, TrueVa
   
   While[(d\[Phi]*sign<=0||(\[Phi]-barrier)*sign>=0)&&(\[Phi]-FalseVacuum)*sign>=0,
   (*dr=If[Abs[cd\[Phi]]<=absolutederivativeaccuracy && Abs[dd\[Phi]]<=absolutederivativeaccuracy,10basicdr,basicdr];*)
-  dr=basicdr * StepScale;
+  (*dr=basicdr * StepScale;*)
   d\[Phi]=cd\[Phi]+dd\[Phi]*dr;
-  \[Phi]=c\[Phi]+cd\[Phi] dr (*+dd\[Phi]*dr*dr/2*);
+  \[Phi]=c\[Phi]+cd\[Phi] dr;
   r=r+dr;
   c\[Phi]=\[Phi];
   cd\[Phi]=d\[Phi];
@@ -762,12 +779,15 @@ GetFieldPoints[AnalyticalPotential_, AnalyticalRenormalization_, TrueVacuum_, Fa
                {TheInitialField_,NumberOfTheBigR_}]:=
   Module[{dr0,absolutefieldaccuracy,absolutederivativeaccuracy,r,dr,\[Phi],d\[Phi],dd\[Phi],c\[Phi],cd\[Phi],fieldinfo,datafieldinfo,k},
   fieldinfo=Array[datafieldinfo,{NumberOfTheBigR,5}];
-  dr0=Abs[FalseVacuum-TrueVacuum]*accuracy*0.05;
+  dr0=Sqrt[Abs[dimension (TrueVacuum-FalseVacuum)^2/0.04]]/2000;
   
   absolutefieldaccuracy=Abs[barrier-FalseVacuum]*accuracy;
-  absolutederivativeaccuracy=Abs[barrier-FalseVacuum]*accuracy^2;
+  
+  absolutederivativeaccuracy = accuracy/(5 Sqrt[dimension]);
+  
   r=0.;
   \[Phi]=TheInitialField;
+  dr=dr0 * StepScale;
   d\[Phi]=0.;
   k=0;
   c\[Phi]=\[Phi];
@@ -776,7 +796,7 @@ GetFieldPoints[AnalyticalPotential_, AnalyticalRenormalization_, TrueVacuum_, Fa
   
   While[k<NumberOfTheBigR,
     (*dr=If[Abs[cd\[Phi]]<=absolutederivativeaccuracy && Abs[dd\[Phi]]<=absolutederivativeaccuracy,10dr0,dr0];*)
-    dr=dr0 * StepScale;
+    (*dr=dr0 * StepScale;*)
     datafieldinfo[k+1,1]=r;
     datafieldinfo[k+1,2]=c\[Phi];
     datafieldinfo[k+1,3]=cd\[Phi];
@@ -784,7 +804,7 @@ GetFieldPoints[AnalyticalPotential_, AnalyticalRenormalization_, TrueVacuum_, Fa
     datafieldinfo[k+1,5]=dr;
     (* Record current r, field values and field's derivations. *)
     d\[Phi]=cd\[Phi]+dd\[Phi]*dr;
-    \[Phi]=c\[Phi]+cd\[Phi] dr(*+dd\[Phi]*dr*dr/2*);
+    \[Phi]=c\[Phi]+cd\[Phi] dr;
     r=r+dr;
     (* Evolve the field and field's first derivation by dr. *)
     c\[Phi]=\[Phi];
@@ -795,6 +815,7 @@ GetFieldPoints[AnalyticalPotential_, AnalyticalRenormalization_, TrueVacuum_, Fa
     
   ];
   If[Is1DTunneling==True,WriteString["stdout","\[SmallCircle]"]];
+  
   Return[fieldinfo]
   ];
 
