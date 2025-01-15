@@ -1,6 +1,6 @@
 # VacuumTunneling
 
-#### A package for evaluating bubble profile with a renomalization factor
+### A package for evaluating bubble profile with a renomalization factor
 
 This package is designed to evaluate such an action
 
@@ -10,10 +10,9 @@ whose corrsponding equation of motion reads
 
 $$\frac{d^2 \sigma}{dr^2}+\frac{D-1}{r} \frac{d\sigma}{dr}-\frac{1}{2}\frac{\partial \mathrm{log} Z_{\sigma}}{\partial \sigma} \left(\frac{d\sigma}{dr}\right)^2 = Z_{\sigma}\frac{\partial V_{eff}}{\partial \sigma}.$$
 
-For more details, see [arxiv:](https:// "VacuumTunneling: A package to solve bonce equation with
-renormalization factor")
+For more details, see [蓝色的字](https:// "VacuumTunneling: A package to solve bonce equation with renormalization factor")
 
-### Installation and Running Guide
+#### Installation and Running Guide
 
 You can install this package like this
 
@@ -21,6 +20,24 @@ You can install this package like this
 
 Load this package by
 
-<span style="color:rgb(59,110,147);font-family:sans-serif;">In[1]:=</span>&nbsp;&nbsp;<code>&lt;&lt;"<span style="color:gray;">VacuumTunneling`</span>"</code>
+```
+<<"VacuumTunneling`"
+```
 
+#### An example for single-field tunneling
 
+Input the effective potential and renormalization factor:
+
+```
+V[x_] := - x^2 + x^3 + 2 x^4;
+Z[x_] := x^2 + 1;
+tv = x /. NSolve[V'[x] == 0, x][[1]];
+fv = x /. NSolve[V'[x] == 0, x][[3]];
+```
+
+Call the `Tunneling` function, input at least 5 arguments `[expression of potential, expression of renormalization, field name,
+true vacuum, false vacuum]`:
+
+```
+a = Tunneling[V[x], Z[x], x, tv, fv]
+```
