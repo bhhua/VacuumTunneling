@@ -1,6 +1,6 @@
 # VacuumTunneling
 
-### A package for evaluating bubble profile with a renomalization factor
+### A package for evaluating bubble profile with a renomalization factor in Mathematica
 
 This package is designed to evaluate such an action
 
@@ -40,4 +40,9 @@ true vacuum, false vacuum]`:
 
 ```
 a = Tunneling[V[x], Z[x], x, tv, fv]
+```
+
+```
+Plot[a[[1]][r], {r, 0, 8.01}]
+Se = a[[2]]
 ```
