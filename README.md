@@ -60,7 +60,7 @@ Input the 2-field effective potential and renormalization factor and find the tr
 
 ```
 V2[h_, s_] := 0.1 h^4 -100 h^2 + 0.3 s^4 -60 s^2 +3 h^2 s^2;
-Z2[h_, s_] := 0.2 / (h + 1) + 0.1 / (2 + 1) - 0.15 / ((h + 1) (s + 1));
+Z2[h_, s_] := 0.2 / (h + 1) + 0.1 / (s + 1) - 0.15 / ((h + 1) (s + 1));
 fv2 = {x, y} /. Last[FindMinimum[V2[x, y], {{x, 0}, {y, 10}}]]
 tv2 = {x, y} /. Last[FindMinimum[V2[x, y], {{x, 22.4}, {y, 0}}]]
 ```
