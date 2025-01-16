@@ -85,7 +85,7 @@ Show the path by `ParametricPlot`:
 
 ```
 Show[
-ContourPlot[v[x, y], {x, -1, 24}, {y, -1, 12}, Contours -> 50, ContourShading -> None, Epilog -> {Red, PointSize[Large], Point[{tv2, fv2}]}],
+ContourPlot[V2[x, y], {x, -1, 24}, {y, -1, 12}, Contours -> 50, ContourShading -> None, Epilog -> {Red, PointSize[Large], Point[{tv2, fv2}]}],
 ParametricPlot[b2[[1]][x], {x, 0, 2.24}],
 ParametricPlot[b1[[1]][x], {x, 0, 0.631}, PlotStyle -> {Orange, Dashed}]
 ]
