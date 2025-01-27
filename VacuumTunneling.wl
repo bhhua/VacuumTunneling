@@ -551,6 +551,7 @@ AnalyticalPotentialAnalyticalRnormalization[potential_, renormalization_, fieldn
 Module[{OriginalFunctionOfPotential,OriginalFunctionOfRenormalization,
   domainl,domainr,barrier,thefield,PotentialAtFalseVacuum,FunctionOfRelativePotential,\[Phi]max,bigv,\[Alpha],NormalizedPotential,
   InitialFieldAndBigR,FieldAndDerivative,FieldPointsOfR,TheAction,result},
+  
   OriginalFunctionOfPotential=Function[thefield,potential/.{fieldname->thefield}];
   OriginalFunctionOfRenormalization=Function[thefield,renormalization/.{fieldname->thefield}];
   domainl=Min[TrueVacuum, FalseVacuum];
@@ -565,14 +566,24 @@ Module[{OriginalFunctionOfPotential,OriginalFunctionOfRenormalization,
   
   NormalizedPotential=FunctionOfRelativePotential[#]/bigv &;
   
+  (*Print[t0101[[1]]];*)
+  
   InitialFieldAndBigR=FindInitialFieldAndBigR[NormalizedPotential,OriginalFunctionOfRenormalization,\[Phi]max,FalseVacuum,
                                               barrier,dimension,times, accuracy,StepScale];
-  FieldAndDerivative=GetFieldPoints[NormalizedPotential, OriginalFunctionOfRenormalization, \[Phi]max, FalseVacuum, 
+  
+  
+  FieldAndDerivative=(*InitialFieldAndBigR[[1]];*)GetFieldPoints[NormalizedPotential, OriginalFunctionOfRenormalization, \[Phi]max, FalseVacuum, 
                                               barrier, dimension, times, accuracy,StepScale,
                                               {InitialFieldAndBigR[[1]],InitialFieldAndBigR[[2]]}];
-  FieldPointsOfR=Table[{FieldAndDerivative[[i,1]]/\[Alpha],FieldAndDerivative[[i,2]]},{i,InitialFieldAndBigR[[2]]}];
+  
+  
+  FieldPointsOfR=Transpose[{Transpose[FieldAndDerivative][[1]]/\[Alpha],Transpose[FieldAndDerivative][[2]]}];
+  
+  
   TheAction=CalculateTheAction[NormalizedPotential, OriginalFunctionOfRenormalization,InitialFieldAndBigR[[2]],dimension,FieldAndDerivative]/(\[Alpha]^(dimension-2));
+  
   result={Interpolation[FieldPointsOfR],Last[FieldAndDerivative][[1]]/\[Alpha],TheAction,InitialFieldAndBigR[[3]]};
+  
   If[Is1DTunneling==True,WriteString["stdout","\[EmptyCircle]"]];
   Return[result]
   ];
@@ -607,7 +618,7 @@ Module[{OriginalExpressionOfPotential,OriginalFunctionOfPotential,AnalyticalFunc
   FieldAndDerivative=GetFieldPoints[NormalizedPotential, OriginalFunctionOfRenormalization, \[Phi]max, FalseVacuum, 
                                     barrier, dimension, times, accuracy, StepScale,
                                     {InitialFieldAndBigR[[1]],InitialFieldAndBigR[[2]]}];
-  FieldPointsOfR=Table[{FieldAndDerivative[[i,1]]/\[Alpha],FieldAndDerivative[[i,2]]},{i,InitialFieldAndBigR[[2]]}];
+  FieldPointsOfR=Transpose[{Transpose[FieldAndDerivative][[1]]/\[Alpha],Transpose[FieldAndDerivative][[2]]}];
   TheAction=CalculateTheAction[NormalizedPotential, OriginalFunctionOfRenormalization,InitialFieldAndBigR[[2]],dimension,FieldAndDerivative]/(\[Alpha]^(dimension-2));
   result={Interpolation[FieldPointsOfR],Last[FieldAndDerivative][[1]]/\[Alpha],TheAction,InitialFieldAndBigR[[3]]};
   If[Is1DTunneling==True,WriteString["stdout","\[EmptyCircle]"]];
@@ -644,9 +655,9 @@ Module[{OriginalFunctionOfPotential,OriginalFunctionOfRenormalization,OriginalEx
   FieldAndDerivative=GetFieldPoints[NormalizedPotential, AnalyticalFunctionOfRnormalization,\[Phi]max,FalseVacuum,
                                     barrier,dimension,times,accuracy,StepScale,
                                     {InitialFieldAndBigR[[1]],InitialFieldAndBigR[[2]]}];
-  FieldPointsOfR=Table[{FieldAndDerivative[[i,1]]/\[Alpha],FieldAndDerivative[[i,2]]},{i,InitialFieldAndBigR[[2]]}];
+  FieldPointsOfR=Transpose[{Transpose[FieldAndDerivative][[1]]/\[Alpha],Transpose[FieldAndDerivative][[2]]}];
   TheAction=CalculateTheAction[NormalizedPotential, AnalyticalFunctionOfRnormalization,InitialFieldAndBigR[[2]],dimension,FieldAndDerivative]/(\[Alpha]^(dimension-2));
-  bounce=Interpolation[FieldPointsOfR];
+  (*bounce=Interpolation[FieldPointsOfR];*)
   result={Interpolation[FieldPointsOfR],Last[FieldAndDerivative][[1]]/\[Alpha],TheAction,InitialFieldAndBigR[[3]]};
   If[Is1DTunneling==True,WriteString["stdout","\[EmptyCircle]"]];
   Return[result]
@@ -685,16 +696,16 @@ Module[{OriginalExpressionOfpotential,OriginalFunctionOfPotential,AnalyticalFunc
   FieldAndDerivative=GetFieldPoints[NormalizedPotential, AnalyticalFunctionOfRnormalization, \[Phi]max, FalseVacuum, barrier, 
                                     dimension, times, accuracy, StepScale,
                                     {InitialFieldAndBigR[[1]],InitialFieldAndBigR[[2]]}];
-  FieldPointsOfR=Table[{FieldAndDerivative[[i,1]]/\[Alpha],FieldAndDerivative[[i,2]]},{i,InitialFieldAndBigR[[2]]}];
+  FieldPointsOfR=Transpose[{Transpose[FieldAndDerivative][[1]]/\[Alpha],Transpose[FieldAndDerivative][[2]]}];
   TheAction=CalculateTheAction[NormalizedPotential, AnalyticalFunctionOfRnormalization,InitialFieldAndBigR[[2]],dimension,FieldAndDerivative]/(\[Alpha]^(dimension-2));
-  bounce=Interpolation[FieldPointsOfR];
+  (*bounce=Interpolation[FieldPointsOfR];*)
   result={Interpolation[FieldPointsOfR],Last[FieldAndDerivative][[1]]/\[Alpha],TheAction,InitialFieldAndBigR[[3]]};
   If[Is1DTunneling==True,WriteString["stdout","\[EmptyCircle]"]];
   Return[result]
   ];
 
 
-(* ::Subsubsection:: *)
+(* ::Subsubsection::Closed:: *)
 (*InterpolationInArea*)
 
 
@@ -717,15 +728,17 @@ InterpolationInArea[NumbericalFunction_,TrueVacuum_,FalseVacuum_,barrier_]:=
 
 FindInitialFieldAndBigR[AnalyticalPotential_, AnalyticalRenormalization_, TrueVacuum_, FalseVacuum_, barrier_,
                         dimension_, times_, accuracy_,StepScale_]:=
-  Module[{\[Phi]max,sign,absolutefieldaccuracy,absolutederivativeaccuracy,basicdr,dr,weib,weim,\[Phi]0,\[Phi],d\[Phi],r,c\[Phi],cd\[Phi],dd\[Phi],j,convergence},
+  Module[{afield,vp,zp,fvp,fzp,\[Phi]max,sign,absolutefieldaccuracy,absolutederivativeaccuracy,basicdr,dr,weib,weim,\[Phi]0,\[Phi],d\[Phi],r,c\[Phi],cd\[Phi],dd\[Phi],j,convergence},
+  vp[afield_]=AnalyticalPotential'[afield];
+  zp[afield_]=AnalyticalRenormalization'[afield];
+  fvp=Function[afield,vp[afield]];
+  fzp=Function[afield,zp[afield]];
   
   \[Phi]max=TrueVacuum;
   sign=Sign[\[Phi]max-FalseVacuum];
   
-  (*While[Block[{y},AnalyticalPotential'[y]/.{y->\[Phi]max}]*sign>0 && Block[{y},AnalyticalPotential[y]/.{y->\[Phi]max}]<Block[{y},AnalyticalPotential[y]/.{y->FalseVacuum}],
-  \[Phi]max=\[Phi]max+sign*(barrier-\[Phi]max)*10^(-10)];*)
-  If[Block[{thefield},AnalyticalPotential'[thefield]/.{thefield->\[Phi]max}]*sign>0,
-     \[Phi]max=thefield/.FindRoot[AnalyticalPotential'[thefield]==0,{thefield,\[Phi]max}]];
+  If[fvp[\[Phi]max]*sign>0,
+     \[Phi]max=thefield/.FindRoot[fvp[thefield]==0,{thefield,\[Phi]max}]];
   (*to prevent wrong true vacuum, which makes the field rolling far away from false vacuum.*)
   
   
@@ -746,17 +759,16 @@ FindInitialFieldAndBigR[AnalyticalPotential_, AnalyticalRenormalization_, TrueVa
   j=0;
   c\[Phi]=\[Phi];
   cd\[Phi]=d\[Phi];
-  dd\[Phi]=AnalyticalRenormalization[c\[Phi]]*Block[{y},AnalyticalPotential'[y]/.{y->c\[Phi]}];
+  dd\[Phi]=AnalyticalRenormalization[c\[Phi]]*fvp[c\[Phi]];
   
   While[(d\[Phi]*sign<=0||(\[Phi]-barrier)*sign>=0)&&(\[Phi]-FalseVacuum)*sign>=0,
-  (*dr=If[Abs[cd\[Phi]]<=absolutederivativeaccuracy && Abs[dd\[Phi]]<=absolutederivativeaccuracy,10basicdr,basicdr];*)
-  (*dr=basicdr * StepScale;*)
+  
   d\[Phi]=cd\[Phi]+dd\[Phi]*dr;
   \[Phi]=c\[Phi]+cd\[Phi] dr;
   r=r+dr;
   c\[Phi]=\[Phi];
   cd\[Phi]=d\[Phi];
-  dd\[Phi]=AnalyticalRenormalization[c\[Phi]]*Block[{y},AnalyticalPotential'[y]/.{y->c\[Phi]}]+1/2 Block[{y},AnalyticalRenormalization'[y]/.{y->c\[Phi]}]/AnalyticalRenormalization[c\[Phi]] cd\[Phi]^2-(dimension-1)/r cd\[Phi];
+  dd\[Phi]=AnalyticalRenormalization[c\[Phi]]*fvp[c\[Phi]]+1/2 fzp[c\[Phi]]/AnalyticalRenormalization[c\[Phi]] cd\[Phi]^2-(dimension-1)/r cd\[Phi];
   j++;
   ];
   
@@ -777,7 +789,12 @@ FindInitialFieldAndBigR[AnalyticalPotential_, AnalyticalRenormalization_, TrueVa
 GetFieldPoints[AnalyticalPotential_, AnalyticalRenormalization_, TrueVacuum_, FalseVacuum_, barrier_, 
                dimension_, times_, accuracy_, StepScale_, 
                {TheInitialField_,NumberOfTheBigR_}]:=
-  Module[{dr0,absolutefieldaccuracy,absolutederivativeaccuracy,r,dr,\[Phi],d\[Phi],dd\[Phi],c\[Phi],cd\[Phi],fieldinfo,datafieldinfo,k},
+  Module[{afield,vp,zp,fvp,fzp,dr0,absolutefieldaccuracy,absolutederivativeaccuracy,r,dr,\[Phi],d\[Phi],dd\[Phi],c\[Phi],cd\[Phi],fieldinfo,datafieldinfo,k},
+  
+  vp[afield_]=AnalyticalPotential'[afield];
+  zp[afield_]=AnalyticalRenormalization'[afield];
+  fvp=Function[afield,vp[afield]];
+  fzp=Function[afield,zp[afield]];
   fieldinfo=Array[datafieldinfo,{NumberOfTheBigR,5}];
   dr0=Sqrt[Abs[dimension (TrueVacuum-FalseVacuum)^2/0.04]]/2000;
   
@@ -792,11 +809,9 @@ GetFieldPoints[AnalyticalPotential_, AnalyticalRenormalization_, TrueVacuum_, Fa
   k=0;
   c\[Phi]=\[Phi];
   cd\[Phi]=d\[Phi];
-  dd\[Phi]=AnalyticalRenormalization[c\[Phi]]*Block[{y},AnalyticalPotential'[y]/.{y->c\[Phi]}];
+  dd\[Phi]=AnalyticalRenormalization[c\[Phi]]*fvp[c\[Phi]];
   
   While[k<NumberOfTheBigR,
-    (*dr=If[Abs[cd\[Phi]]<=absolutederivativeaccuracy && Abs[dd\[Phi]]<=absolutederivativeaccuracy,10dr0,dr0];*)
-    (*dr=dr0 * StepScale;*)
     datafieldinfo[k+1,1]=r;
     datafieldinfo[k+1,2]=c\[Phi];
     datafieldinfo[k+1,3]=cd\[Phi];
@@ -809,7 +824,7 @@ GetFieldPoints[AnalyticalPotential_, AnalyticalRenormalization_, TrueVacuum_, Fa
     (* Evolve the field and field's first derivation by dr. *)
     c\[Phi]=\[Phi];
     cd\[Phi]=d\[Phi];
-    dd\[Phi]=AnalyticalRenormalization[c\[Phi]]*Module[{y},AnalyticalPotential'[y]/.{y->c\[Phi]}]+1/2 Module[{y},AnalyticalRenormalization'[y]/.{y->c\[Phi]}]/AnalyticalRenormalization[c\[Phi]] cd\[Phi]^2-(dimension-1)/r cd\[Phi];
+    dd\[Phi]=AnalyticalRenormalization[c\[Phi]]*fvp[c\[Phi]]+1/2 fzp[c\[Phi]]/AnalyticalRenormalization[c\[Phi]] cd\[Phi]^2-(dimension-1)/r cd\[Phi];
     (* Then the evolved field and field's first derivation become the current ones. *)
     k++;
     
