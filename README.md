@@ -10,7 +10,7 @@ whose corrsponding equation of motion reads
 
 $$\frac{d^2 \sigma}{dr^2}+\frac{D-1}{r} \frac{d\sigma}{dr}-\frac{1}{2}\frac{\partial \mathrm{log} Z_{\sigma}}{\partial \sigma} \left(\frac{d\sigma}{dr}\right)^2 = Z_{\sigma}\frac{\partial V_{eff}}{\partial \sigma}.$$
 
-For more details, see [蓝色的字](https://网址 "VacuumTunneling: A package to solve bonce equation with renormalization factor")
+For more details, see [arXiv:2501.15236](https://arxiv.org/abs/2501.15236 "VacuumTunneling: A package to solve bonce equation with renormalization factor")
 
 #### Installation and Running Guide
 
