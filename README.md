@@ -93,7 +93,7 @@ ParametricPlot[b1[[1]][x], {x, 0, 0.631}, PlotStyle -> {Orange, Dashed}]
 
 <img src="https://github.com/bhhua/VacuumTunneling/blob/main/images/2doriginpath.png" width="300px">
 
-#### An example numerical expressions & super-cooling
+#### An example for numerical expressions & super-cooling
 
 The potential and renormalizaton reads:
 
