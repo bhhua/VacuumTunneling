@@ -92,3 +92,25 @@ ParametricPlot[b1[[1]][x], {x, 0, 0.631}, PlotStyle -> {Orange, Dashed}]
 ```
 
 <img src="https://github.com/bhhua/VacuumTunneling/blob/main/images/2doriginpath.png" width="300px">
+
+#### An example numerical expressions & super-cooling
+
+The potential and renormalizaton reads:
+
+```
+λ = 1/(16 π^2);
+g = 1;
+μ = 100;
+V3[ϕ_, T_] := λ/4 ϕ^4 + (g^2 ϕ^4)/(64 π^2) (Log[(g ϕ^2)/μ^2] - 3/2) +T^4/(2 π^2) NIntegrate[x^2 Log[1 - Exp[-Sqrt[x^2 + (g ϕ^2)/T^2]]], {x, 0, ∞}];
+Z3[ϕ_, T_] := 1 - g^2 ϕ^2/(16 π^2 M[ϕ, T]^2);
+M[ϕ_, T_] := (g ϕ^2)^2 + g T^2/6;
+```
+
+To evaluate it at $T$ = 1GeV:
+```
+c1=Tunneling[V3[ϕ, 1], Z3[ϕ, 1], ϕ, μ, 0, NumericalPotential -> True, Dimension -> 3]
+```
+
+The bounce solution and action is as follow：
+
+<img src="https://github.com/bhhua/VacuumTunneling/blob/main/images/supercoolingplot.png" width="350px">
