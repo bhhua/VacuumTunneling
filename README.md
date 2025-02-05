@@ -95,6 +95,10 @@ ParametricPlot[b1[[1]][x], {x, 0, 0.631}, PlotStyle -> {Orange, Dashed}]
 
 #### An example for numerical expressions & super-cooling
 
+We present a concrete, simple toy model for those super-cooling phase transitions. The Lagrangian is constructed by the single scalar theory with the CSI symmetry:
+
+$$\mathcal{L}=\frac{1}{2}\partial^\mu\phi\partial_\mu\phi+\frac{1}{2}\partial^\mu X\partial_\mu X-\frac{\lambda}{4}\phi^4-\frac{g}{2}X^2\phi^2.$$
+
 The potential and renormalizaton reads:
 
 ```
