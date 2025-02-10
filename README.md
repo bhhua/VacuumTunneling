@@ -118,3 +118,7 @@ c1=Tunneling[V3[ϕ, 1], Z3[ϕ, 1], ϕ, μ, 0, NumericalPotential -> True, Dimens
 The bounce solution and action is as follow：
 
 <img src="https://github.com/bhhua/VacuumTunneling/blob/main/images/supercoolingplot.png" width="350px">
+
+## License
+
+[GNU General Public License v3.0](https://choosealicense.com/licenses/gpl-3.0/)
