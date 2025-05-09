@@ -27,7 +27,7 @@ Tunneling;
 Options[Tunneling] = {
   Dimension -> 4,
   TimesToFind->50,
-  TimesToDefom->20,
+  TimesToDeform->20,
   RelativeAccuracy->1/100,
   NumericalPotential->False,
   NumericalRenormalization->False,
@@ -72,13 +72,13 @@ Which[Length[fields]==Length[Vacuum1]==Length[Vacuum2]==0,
                 OptionValue[Dimension],OptionValue[BarrierBetweenVacuums],
                 OptionValue[TimesToFind],OptionValue[RelativeAccuracy],OptionValue[StepScale],
                 OptionValue[NumericalPotential],OptionValue[NumericalRenormalization],
-                OptionValue[PointsNumber],OptionValue[TimesToDefom]],
+                OptionValue[PointsNumber],OptionValue[TimesToDeform]],
              OptionValue[NumericalPotential]==True || OptionValue[NumericalRenormalization]==True,
                 b=nT2[potential, renormalization, fields, Vacuum1, Vacuum2,
                 OptionValue[Dimension],OptionValue[BarrierBetweenVacuums],
                 OptionValue[TimesToFind],OptionValue[RelativeAccuracy],OptionValue[StepScale],
                 OptionValue[NumericalPotential],OptionValue[NumericalRenormalization],
-                OptionValue[PointsNumber],OptionValue[TimesToDefom]]
+                OptionValue[PointsNumber],OptionValue[TimesToDeform]]
         ];
         Return[{b[[2]],b[[3]]}],
       True,Print["Number of fields has to be same as dimension of vacuums."]]]
