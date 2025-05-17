@@ -131,6 +131,9 @@ ListLinePlot[S3T, ScalingFunctions -> {"Log", "Log"}, Frame -> True,
  PlotLegends -> Placed[{"VacuumTunneling"}, {0.3, 0.6}]]
 ```
 
+The result is:
+
+<img src="https://github.com/bhhua/VacuumTunneling/blob/main/images/s30t_t.jpg" width="350px">
 
 ## License
 
