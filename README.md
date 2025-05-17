@@ -119,6 +119,19 @@ The bounce solution and action is as follow：
 
 <img src="https://github.com/bhhua/VacuumTunneling/blob/main/images/supercoolingplot.png" width="350px">
 
+To solve the tunneling at temperatures ranging from 0.5 to 29 GeV by the following code:
+
+```
+3oT = Table[{i/2, Tunneling[Vsc[ϕ, i/2], 1, ϕ, μ, 0, NumericalPotential -> True, Dimension -> 3][[2]]/(i/2)}, {i, 58}];
+ListLinePlot[S3T, ScalingFunctions -> {"Log", "Log"}, Frame -> True, 
+ FrameLabel -> {"T", "\!\(\*SubscriptBox[\(S\), \(3\)]\)/T"}, 
+ LabelStyle -> Directive[Black, 12], 
+ FrameTicks -> {{True, False}, {True, False}}, 
+ FrameTicksStyle -> Directive[Black, 12], 
+ PlotLegends -> Placed[{"VacuumTunneling"}, {0.3, 0.6}]]
+```
+
+
 ## License
 
 [GNU General Public License v3.0](https://choosealicense.com/licenses/gpl-3.0/)
