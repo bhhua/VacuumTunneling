@@ -135,6 +135,20 @@ The result is:
 
 <img src="https://github.com/bhhua/VacuumTunneling/blob/main/images/s30t_t.jpg" width="350px">
 
+#### Bug Report
+
+The Method ``"LocalAdaptive"`` of function ``NIntegrate`` may cause expression recognition errors. For example, the potential 
+
+```
+Nb = 3;
+gD = 0.64;
+v = 10^7(*GeV*);
+JB[y_] := NIntegrate[intx^2 Log[1 - Exp[-Sqrt[intx^2 + y]]], {intx, 0, Infinity}, Method -> "LocalAdaptive"];
+V[ϕ_, T_, m0_] := (Nb gD^2 ϕ^4)/(32 π^2) (Log[ϕ/v] - 1/4) + (Nb T^4)/(2 π^2) JB[(gD^2 ϕ^2)/T^2] - m0^2/2 ϕ^2;
+```
+
+cannot be correctly recognized.
+
 ## License
 
 [GNU General Public License v3.0](https://choosealicense.com/licenses/gpl-3.0/)
