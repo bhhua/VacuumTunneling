@@ -34,7 +34,8 @@ Options[Tunneling] = {
   NumericalRenormalization->False,
   PointsNumber->100,
   BarrierBetweenVacuums->Null,
-  StepScale->1};
+  StepScale->1,
+  InitialPath->"line"};
 
 
 Options[GravityTunneling] = {
@@ -87,7 +88,7 @@ GravityTunnelingrh=2 GravityTunnelingG * GravityTunneling\[Mu]minus;
 (* Define your public and private symbols here. *)
 
 Tunneling[potential_, renormalization_, fields_, Vacuum1_, Vacuum2_, OptionsPattern[]]:=Module[{b},
-Which[Length[fields]==Length[Vacuum1]==Length[Vacuum2]==0,
+Which[(*Length[fields]==Length[Vacuum1]==Length[Vacuum2]==0*)ArrayQ[fields]==ArrayQ[Vacuum1]==ArrayQ[Vacuum2]==False,
         Is1DTunneling=True;
         b=T1[potential,renormalization,fields,Vacuum1,Vacuum2,
         OptionValue[Dimension],OptionValue[BarrierBetweenVacuums],
@@ -95,7 +96,7 @@ Which[Length[fields]==Length[Vacuum1]==Length[Vacuum2]==0,
         OptionValue[NumericalPotential],OptionValue[NumericalRenormalization]];
         If[b[[4]]==False,Print["Fail to find within given times. The result may be incorrect. Please increase option 'TimesToFind' or reduce 'RelativeAccuracy'"]];
         Return[{b[[1]],b[[3]]}],
-      Length[fields]==Length[Vacuum1]==Length[Vacuum2]>1,
+      (ArrayQ[fields]==ArrayQ[Vacuum1]==ArrayQ[Vacuum2]==True&&ArrayQ[renormalization]==False)&&Length[fields]==Length[Vacuum1]==Length[Vacuum2]>1,
         Is1DTunneling=False;
         Which[OptionValue[NumericalPotential]==False && OptionValue[NumericalRenormalization]==False,
                 b=T2[potential, renormalization, fields, Vacuum1, Vacuum2,
@@ -111,10 +112,18 @@ Which[Length[fields]==Length[Vacuum1]==Length[Vacuum2]==0,
                 OptionValue[PointsNumber],OptionValue[TimesToDeform]]
         ];
         Return[{b[[2]],b[[3]]}],
+      ArrayQ[fields]==ArrayQ[Vacuum1]==ArrayQ[Vacuum2]==ArrayQ[renormalization]==True&&Length[fields]==Length[Vacuum1]==Length[Vacuum2]==Length[renormalization]>1,
+        Is1DTunneling=False;
+        If[OptionValue[NumericalRenormalization]==False,IsNumericalRenormailzation={False,False},IsNumericalRenormailzation=OptionValue[NumericalRenormalization]];
+        b=Tunneling2[potential,{renormalization[[1]],renormalization[[2]]},fields,Vacuum1,Vacuum2,
+                     OptionValue[NumericalRenormalization], IsNumericalRenormailzation,
+                     OptionValue[Dimension],OptionValue[TimesToDeform],OptionValue[PointsNumber],
+                     OptionValue[TimesToFind],OptionValue[RelativeAccuracy],OptionValue[StepScale],OptionValue[InitialPath]];
+      Return[{b[[1]],b[[2]]}],
       True,Print["Number of fields has to be same as dimension of vacuums."]]]
 
 
-(* ::Subsection:: *)
+(* ::Subsubsection::Closed:: *)
 (*GravityTunneling*)
 
 
@@ -158,7 +167,7 @@ resultfunction[x_]=Which[x=="Action",BE,
 Return[resultfunction];];
 
 
-(* ::Subsubsection:: *)
+(* ::Subsubsection::Closed:: *)
 (*T1*)
 
 
@@ -189,7 +198,7 @@ T1[potential_, renormalization_, fields_, Vacuum1_, Vacuum2_,
 ];
 
 
-(* ::Subsubsection:: *)
+(* ::Subsubsection::Closed:: *)
 (*T2*)
 
 
@@ -207,6 +216,7 @@ z=Function[fields,renormalization];
 If[v@@Vacuum1>v@@Vacuum2,FalseVacuum=Vacuum1;TrueVacuum=Vacuum2;,FalseVacuum=Vacuum2;TrueVacuum=Vacuum1;];
 dov=Norm[Vacuum1-Vacuum2];
 line=Function[t,FalseVacuum+(TrueVacuum-FalseVacuum)/dov t];
+spl=Function[t,FalseVacuum+(TrueVacuum-FalseVacuum)/dov t];
 
 vt[t_]=v@@line[t];
 barrier1d = t/.Last[FindMaximum[{vt[t],0<t<dov},t]];
@@ -221,7 +231,9 @@ s=T1[vt[t],zt[t],t,dov,0,
     Dimension, BarrierBetweenVacuums,
     TimesToFind, RelativeAccuracy, StepScale, 
     NumbericalPotential, NumbericalRenormalization];
-
+Print[s[[3]]/550000];
+Print[Plot[s[[1]][x],{x,0,s[[2]]}]];
+Print[s[[1]]];
 tmaxfn=100000;
 amaxfn=\[Infinity];
 k=0;
@@ -239,11 +251,14 @@ tpp=tps[[2]];
 q=0;
 staynumber=0;
 alwaysconvergence=True;
+df1={};
 While[q<TimesDefom,q++;
 lastconvergence=s[[4]];
 alwaysconvergence=alwaysconvergence&&lastconvergence;
 
 {npts,stay}=defom[tpts,tp2,tpp,z,dvdf,dzdf];
+spl=Interpolation[Transpose[{tls,tpts}]];
+AppendTo[df1,npts-tpts];
 
 If[stay==0,staynumber=0,staynumber++];
 If[staynumber>=2||q>=TimesDefom,
@@ -269,12 +284,70 @@ s=T1[vt[t],zt[t],t,Last[tls],0.,
      Dimension, BarrierBetweenVacuums,
      TimesToFind, RelativeAccuracy, StepScale,
      NumbericalPotential, NumbericalRenormalization];
-
+Print[s[[3]]/550000];
+Print[Plot[s[[1]][x],{x,0,s[[2]]}]];
+Print[s[[1]]];
 tps=dbdr[s[[1]],tls,s[[2]]];
 tp2=tps[[1]]*tps[[1]];
 tpp=tps[[2]];
 tpts=npts;
 ];
+
+(*extra test*)
+segments=npts-Delete[Prepend[npts,npts[[1]]],n+2];
+tds=ArrayReduce[Norm,segments,2];
+
+l=0.;
+tls=Table[l=l+tds[[i]],{i,n+1}];
+
+vs=MapThread[v,Transpose[npts]];
+zs=MapThread[z,Transpose[npts]];
+vt=Interpolation[Transpose[{tls,vs}]];
+zt=Interpolation[Transpose[{tls,zs}]];
+
+s=T1[vt[t],zt[t],t,Last[tls],0.,
+     Dimension, BarrierBetweenVacuums,
+     TimesToFind, RelativeAccuracy, StepScale,
+     NumbericalPotential, NumbericalRenormalization];
+Print[s[[3]]/550000];
+Print[Plot[s[[1]][x],{x,0,s[[2]]}]];
+Print[s[[1]]];
+tps=dbdr[s[[1]],tls,s[[2]]];
+tp2=tps[[1]]*tps[[1]];
+tpp=tps[[2]];
+tpts=npts;
+npts=tpts+df1[[2]];
+
+sp=Interpolation[Transpose[{tls,tpts}]];
+rs=Table[i*s[[2]]/100,{i,0,100}];
+ts=s[[1]][rs];
+fps=sp[ts];
+fr=Interpolation[Transpose[{rs,fps}]];
+
+segments=npts-Delete[Prepend[npts,npts[[1]]],n+2];
+tds=ArrayReduce[Norm,segments,2];
+
+l=0.;
+tls=Table[l=l+tds[[i]],{i,n+1}];
+
+vs=MapThread[v,Transpose[npts]];
+zs=MapThread[z,Transpose[npts]];
+vt=Interpolation[Transpose[{tls,vs}]];
+zt=Interpolation[Transpose[{tls,zs}]];
+
+s=T1[vt[t],zt[t],t,Last[tls],0.,
+     Dimension, BarrierBetweenVacuums,
+     TimesToFind, RelativeAccuracy, StepScale,
+     NumbericalPotential, NumbericalRenormalization];
+Print[s[[3]]/550000];
+Print[Plot[s[[1]][x],{x,0,s[[2]]}]];
+Print[s[[1]]];
+tps=dbdr[s[[1]],tls,s[[2]]];
+tp2=tps[[1]]*tps[[1]];
+tpp=tps[[2]];
+tpts=npts;
+
+(*end extra test*)
 If[q>=TimesDefom,
     Print["Path deformation can not complete in given times. The result may be incorrect."]
 ];
@@ -288,7 +361,7 @@ WriteString["stdout","\[EmptyCircle]"];
 Return[{s[[1]],fr,s[[3]]}]]
 
 
-(* ::Subsubsection:: *)
+(* ::Subsubsection::Closed:: *)
 (*nT2*)
 
 
@@ -306,6 +379,7 @@ z=Function[fields,renormalization];
 If[v@@Vacuum1>v@@Vacuum2,FalseVacuum=Vacuum1;TrueVacuum=Vacuum2;,FalseVacuum=Vacuum2;TrueVacuum=Vacuum1;];
 dov=Norm[Vacuum1-Vacuum2];
 line=Function[t,FalseVacuum+(TrueVacuum-FalseVacuum)/dov t];
+
 lxx[x_]:=(TrueVacuum[[2]]-FalseVacuum[[2]])/(TrueVacuum[[1]]-FalseVacuum[[1]])*(x-FalseVacuum[[1]])+FalseVacuum[[2]];
 
 vt[t_]=v@@line[t];
@@ -386,6 +460,452 @@ Return[{s[[1]],fr,s[[3]]}]]
 
 
 (* ::Subsubsection:: *)
+(*Tunneling2*)
+
+
+Tunneling2[potential_,{renormalization1_,renormalization2_},fieldnames_,vacuum1_,vacuum2_,NumbericalPotential_, NumbericalRenormalization_,dimension_,timestodeform_,nofpoints_,timestofind_,accuracy_,StepScale_,initialpath_]:=Module[
+{originv,originz1,originz2,falsevacuum,truevacuum,analyticalv,vfvto0,bigv,vscaled,dvscaled1,dvscaled2,analyticalz1,analyticalz2,dz1d1,dz1d2,dz2d1,dz2d2,dov,line1,line2,linep1,linep2,vlinep,truev,pointslist,xlist,nowdeform,staynumber,scaledbounce,dr,fieldinfo,rilist,dxdrlist,dxdr2list,nextpointslist,stay,dphilist,dxlist,integratedx,scalealpha,truebounce,mulitfieldbounce,trueaction,result},
+  originv=Function[Evaluate[fieldnames],potential];
+  originz1=Function[Evaluate[fieldnames],renormalization1];
+  originz2=Function[Evaluate[fieldnames],renormalization2];
+  
+  Which[
+  NumericQ[originv@@vacuum1]===False||NumericQ[originv@@vacuum2]===False,Print["Check the potential values at VEVs."];Return[0],
+    originv@@vacuum1>originv@@vacuum2,falsevacuum=vacuum1;truevacuum=vacuum2,
+    originv@@vacuum1<originv@@vacuum2,falsevacuum=vacuum2;truevacuum=vacuum1
+  ];
+  
+  If[NumbericalPotential===False,
+    analyticalv=originv,
+    Return[0]
+  ];
+  
+  vfvto0=(analyticalv[##]-analyticalv@@falsevacuum)&;
+  bigv=Abs[vfvto0@@truevacuum]/0.04;
+  scalealpha=Sqrt[bigv];
+  vscaled=(vfvto0[##]/bigv)&;
+  dvscaled1=Function[{field1,field2},Evaluate[D[vscaled[field1,field2],field1]]];
+  dvscaled2=Function[{field1,field2},Evaluate[D[vscaled[field1,field2],field2]]];
+  
+  
+  
+  If[NumbericalRenormalization[[1]]===False,
+    analyticalz1=originz1,
+    Return[0]
+  ];
+  If[NumbericalRenormalization[[2]]===False,
+    analyticalz2=originz2,
+    Return[0]
+  ];
+  
+  dz1d1=Function[{field1,field2},Evaluate[D[analyticalz1[field1,field2],field1]]];
+  dz1d2=Function[{field1,field2},Evaluate[D[analyticalz1[field1,field2],field2]]];
+  dz2d1=Function[{field1,field2},Evaluate[D[analyticalz2[field1,field2],field1]]];
+  dz2d2=Function[{field1,field2},Evaluate[D[analyticalz2[field1,field2],field2]]];
+  
+  dov=Norm[truevacuum-falsevacuum];
+  
+  If[initialpath=="div",
+    pointslist=Table[{(truevacuum[[1]]-falsevacuum[[1]])i/nofpoints+falsevacuum[[1]],y/.FindRoot[dvscaled2[(truevacuum[[1]]-falsevacuum[[1]])i/nofpoints+falsevacuum[[1]],y]==0,{y,(falsevacuum[[2]]+truevacuum[[2]])/2}]},{i,0,nofpoints-1}];
+    dphilist=Delete[pointslist,1]-Delete[pointslist,-1];
+    dxlist=Sqrt[Total[Transpose[dphilist*dphilist]]];
+    PrependTo[dxlist,0];
+    integratedx=0;
+    xlist=Table[integratedx=integratedx+dxlist[[i]],{i,nofpoints}];
+    line1=Interpolation[Transpose[{xlist,Transpose[pointslist][[1]]}]];
+    line2=Interpolation[Transpose[{xlist,Transpose[pointslist][[2]]}]];
+    linep1=line1'[#]&;
+    linep2=line2'[#]&;
+    ,
+    line1[parameterx_]:=(truevacuum[[1]]-falsevacuum[[1]])parameterx/dov+falsevacuum[[1]];
+    line2[parameterx_]:=(truevacuum[[2]]-falsevacuum[[2]])parameterx/dov+falsevacuum[[2]];
+    linep1[parameterx_]:=(truevacuum[[1]]-falsevacuum[[1]])/dov;
+    linep2[parameterx_]:=(truevacuum[[2]]-falsevacuum[[2]])/dov;
+    pointslist=Table[{line1[i/(nofpoints-1)dov],line2[i/(nofpoints-1)dov]},{i,0,nofpoints-1}];
+    xlist=Table[i/(nofpoints-1)dov,{i,0,nofpoints-1}];
+  ];
+  
+  
+  nowdeform=0;
+  staynumber=0;
+  
+  (*originpoints=pointslist;
+  Clear[dfdf];*)
+  
+  While[nowdeform<timestodeform,nowdeform++;
+  vlinep=(dvscaled1[line1[#],line2[#]]*linep1[#]+dvscaled1[line1[#],line2[#]]*linep1[#])&;
+  truev=parax/.FindRoot[vlinep[parax]==0,{parax,xlist[[-1]]}];
+  (*Print[truev-xlist[[-1]]];*)
+  scaledbounce=PathBounce2[vscaled,{dvscaled1,dvscaled2},{analyticalz1,analyticalz2},{{dz1d1,dz1d2},{dz2d1,dz2d2}},{line1,line2},{linep1,linep2},truev,0,bigv,dimension,timestofind,accuracy,StepScale];
+  If[scaledbounce[[3]]===False,Print["Reach max steps in 1d tunneling. Return the last result."];Break[]];
+  
+  dr=scaledbounce[[1]];
+  fieldinfo=scaledbounce[[2]];
+  
+  rilist=Table[
+    Which[
+      xlist[[i]]>=fieldinfo[[1,2]],0,
+      xlist[[i]]<=fieldinfo[[-1,2]],0,
+      True,FirstPosition[fieldinfo,{_,parameterx_,_}/;parameterx<=xlist[[i]]][[1]]
+    ],
+  {i,nofpoints}];
+  
+  dxdrlist=Table[
+    If[
+      rilist[[i]]==0,0,
+      (fieldinfo[[rilist[[i]],3]]+fieldinfo[[rilist[[i]]-1,3]])/2
+    ],
+  {i,nofpoints}];
+  dxdr2list=dxdrlist*dxdrlist;
+  
+  {nextpointslist,stay}=defom2[pointslist,nofpoints,dxdr2list,{dvscaled1,dvscaled2},{analyticalz1,analyticalz2},{{dz1d1,dz1d2},{dz2d1,dz2d2}}];
+  
+  
+  If[stay==0,staynumber=0,staynumber++];
+  If[nowdeform>=timestodeform,Print["Reach max steps in path deformation. Return the last result."];Break[]];
+  If[staynumber>=2,WriteString["stdout","\[SmallCircle]"];Break[]];
+  (*truebounce=Interpolation[Transpose[{Transpose[fieldinfo][[1]]/scalealpha,Transpose[fieldinfo][[2]]}]];
+  trueaction=CalculateTheAction2[dimension,dr,fieldinfo,vscaled,{analyticalz1,analyticalz2},{line1,line2},{linep1,linep2}]/(scalealpha^(dimension-2));*)
+  
+  pointslist=nextpointslist;
+  dphilist=Delete[pointslist,1]-Delete[pointslist,-1];
+  dxlist=Sqrt[Total[Transpose[dphilist*dphilist]]];
+  PrependTo[dxlist,0];
+  integratedx=0;
+  xlist=Table[integratedx=integratedx+dxlist[[i]],{i,nofpoints}];
+  
+  line1=Interpolation[Transpose[{xlist,Transpose[pointslist][[1]]}]];
+  
+  line2=Interpolation[Transpose[{xlist,Transpose[pointslist][[2]]}]];
+  
+  linep1=line1'[#]&;
+  linep2=line2'[#]&;
+  
+  ];
+  
+  (*extra test*)
+  
+  
+  
+  (*If[scaledbounce[[3]]===False,Return[0]];
+  
+  lastpoints=pointslist;
+  pathlist={};
+  dfdf=(lastpoints-originpoints)/20;
+  actionlist={};
+  deformtimes={};
+  pointslist=originpoints;
+  
+  For[qqqq=0,qqqq<=40,qqqq++,
+  nextpointslist=pointslist+dfdf;
+  
+  (*Print[ListPlot[pointslist]];*)
+  pointslist=nextpointslist;
+  
+  dphilist=Delete[pointslist,1]-Delete[pointslist,-1];
+  dxlist=Sqrt[Total[Transpose[dphilist*dphilist]]];
+  PrependTo[dxlist,0];
+  integratedx=0;
+  xlist=Table[integratedx=integratedx+dxlist[[i]],{i,nofpoints}];
+  
+  line1=Interpolation[Transpose[{xlist,Transpose[pointslist][[1]]}]];
+  
+  line2=Interpolation[Transpose[{xlist,Transpose[pointslist][[2]]}]];
+  
+  linep1=line1'[#]&;
+  linep2=line2'[#]&;
+  vlinep=(dvscaled1[line1[#],line2[#]]*linep1[#]+dvscaled1[line1[#],line2[#]]*linep1[#])&;
+  truev=parax/.FindRoot[vlinep[parax]==0,{parax,xlist[[-1]]}];
+  (*Print[truev-xlist[[-1]]];*)
+  scaledbounce=PathBounce2[vscaled,{dvscaled1,dvscaled2},{analyticalz1,analyticalz2},{{dz1d1,dz1d2},{dz2d1,dz2d2}},{line1,line2},{linep1,linep2},truev,0,bigv,dimension,timestofind,accuracy,StepScale];
+  dr=scaledbounce[[1]];
+  fieldinfo=scaledbounce[[2]];
+  rilist=Table[
+    Which[
+      xlist[[i]]>=fieldinfo[[1,2]],0,
+      xlist[[i]]<=fieldinfo[[-1,2]],0,
+      True,FirstPosition[fieldinfo,{_,parameterx_,_}/;parameterx<=xlist[[i]]][[1]]
+    ],
+  {i,nofpoints}];
+  
+  dxdrlist=Table[
+    If[
+      rilist[[i]]==0,0,
+      (fieldinfo[[rilist[[i]],3]]+fieldinfo[[rilist[[i]]-1,3]])/2
+    ],
+  {i,nofpoints}];
+  dxdr2list=dxdrlist*dxdrlist;
+  
+  truebounce=Interpolation[Transpose[{Transpose[fieldinfo][[1]]/scalealpha,Transpose[fieldinfo][[2]]}]];
+  trueaction=CalculateTheAction2[dimension,dr,fieldinfo,vscaled,{analyticalz1,analyticalz2},{line1,line2},{linep1,linep2}]/(scalealpha^(dimension-2));
+  
+  
+  
+  (*Print[ListPlot[(2 \[Pi]^(dimension/2))/Gamma[dimension/2]*dr*Transpose[Table[fieldinfo[[i,1]]^(dimension-1)({(1/(2analyticalz1[line1[fieldinfo[[i,2]]],line2[fieldinfo[[i,2]]]])linep1[fieldinfo[[i,2]]]^2+1/(2analyticalz2[line1[fieldinfo[[i,2]]],line2[fieldinfo[[i,2]]]])linep2[fieldinfo[[i,2]]]^2)fieldinfo[[i,3]]^2,vscaled[line1[fieldinfo[[i,2]]],line2[fieldinfo[[i,2]]]]}),{i,Length[fieldinfo]}]],PlotRange\[Rule]All]];
+  Print[ListPlot[Table[vscaled[line1[fieldinfo[[i,2]]],line2[fieldinfo[[i,2]]]],{i,Length[fieldinfo]}],PlotRange\[Rule]All]];
+  Print[ListPlot[Transpose[Table[{line1[fieldinfo[[i,2]]],line2[fieldinfo[[i,2]]]},{i,Length[fieldinfo]}]],PlotRange\[Rule]All]];
+  Print[trueaction];*)
+  If[scaledbounce[[3]]===True,
+    AppendTo[pathlist,pointslist];
+    AppendTo[actionlist,trueaction];,
+    AppendTo[pathlist,{{,}}];
+    AppendTo[actionlist,Null];
+    Print["skip",qqqq];
+  ];
+  AppendTo[deformtimes,qqqq];
+  (*Print[Plot[truebounce[x],{x,0,fieldinfo[[-1,1]]/scalealpha}]];*)
+  (*Print[truebounce];*)
+  
+  ];
+  minVal=Min[deformtimes];
+  maxVal=Max[deformtimes];
+  colorFunction=ColorData[{"Rainbow",{minVal,maxVal}}];
+  Print[plot1=ListLinePlot[actionlist,ColorFunction->Function[{x,y},colorFunction[x]],ColorFunctionScaling->False,PlotLegends->BarLegend[{colorFunction,{minVal,maxVal}},LegendLabel->"deform times"],PlotLabel->"actions",ImageSize->400]];
+  colors=colorFunction/@deformtimes;
+  plot2=ListLinePlot[pathlist,PlotStyle->colors,PlotLegends->BarLegend[{colors,{minVal,maxVal}},LegendLabel->"deform times"],PlotLabel->"paths",ImageSize->400];
+  plot3=ListLinePlot[lastpoints,PlotStyle\[Rule]Black,PlotLegends->Placed[LineLegend[{Black},{"path solved"}],{0.8,0.2}]];
+  Print[Show[plot2,plot3]];*)
+  
+  
+  
+  (*end extra test*)
+  
+  scalealpha=Sqrt[bigv];
+  (*truebounce=Interpolation[Transpose[{Transpose[fieldinfo][[1]]/scalealpha,Transpose[fieldinfo][[2]]}]];
+  mulitfieldbounce={line1[truebounce[#]],line2[truebounce[#]]}&;*)
+  mulitfieldbounce=Interpolation[Transpose[{Transpose[fieldinfo][[1]]/scalealpha,Transpose[{line1/@Transpose[fieldinfo][[2]],line2/@Transpose[fieldinfo][[2]]}]}]];
+  (*Print[mulitfieldbounce];*)
+  trueaction=CalculateTheAction2[dimension,dr,fieldinfo,vscaled,{analyticalz1,analyticalz2},{line1,line2},{linep1,linep2}]/(scalealpha^(dimension-2));
+  
+  result={mulitfieldbounce,trueaction,scaledbounce[[3]]};
+  WriteString["stdout","\[EmptyCircle]"];
+  Return[result]
+];
+
+
+PathBounce2[vscaled_,{dvscaled1_,dvscaled2_},{z1_,z2_},{{dz1d1_,dz1d2_},{dz2d1_,dz2d2_}},{line1_,line2_},{linep1_,linep2_},truevacuum_,falsevacuum_,bigv_,dimension_,times_,accuracy_,StepScale_]:=Module[
+{sign,fieldaccuracy,derivativeaccuracy,basicdr,dr,termr,termz1,termz2,termv,thexmax,weib,weim,rho,crho,parameterx0,parameterx,cparameterx,dxdr,cdxdr,ddxdr,cddxdr,fieldinfo,bounce2z,theaction,scalealpha,convergence},
+  
+  (*Veff(truevacuum) must < Veff(falsevacuum).*)
+  If[vscaled[line1[truevacuum],line2[truevacuum]]>=vscaled[line1[falsevacuum],line2[falsevacuum]],
+    Print["Wrong potential or VEV."];
+    Return[{0,False}]
+  ];
+  
+  sign=Sign[truevacuum-falsevacuum];
+  fieldaccuracy=Abs[truevacuum-falsevacuum]*accuracy/2;
+  derivativeaccuracy = accuracy/(5 Sqrt[dimension]);
+  basicdr= Sqrt[Abs[dimension (truevacuum-falsevacuum)^2/0.04]]/2000;
+  
+  
+  dr=basicdr*StepScale;
+  (*(D-1)/rdx/dr*)
+  termr[rhoo_,dtdr_]:=Piecewise[{{0,rhoo==0},{(dimension-1)/rhoo*dtdr,rhoo>0}}];
+  (*-\!\(
+\*SubscriptBox[\(\[Sum]\), \(i\)]\(
+\*FractionBox[\(1\), 
+SubscriptBox[\(Z\), \(i\)]]
+\*FractionBox[
+SubscriptBox[\(dZ\), \(i\)], \(dx\)]
+\*SuperscriptBox[\((
+\*FractionBox[
+SubscriptBox[\(d\[Phi]\), \(i\)], \(dx\)])\), \(2\)]
+\*SuperscriptBox[\((
+\*FractionBox[\(dx\), \(dr\)])\), \(2\)]\)\)*)
+  termz1[parametert_,dtdr_]=-(1/z1[line1[parametert],line2[parametert]] (dz1d1[line1[parametert],line2[parametert]]*linep1[parametert]+dz1d2[line1[parametert],line2[parametert]]*linep2[parametert])(linep1[parametert])^2+1/z2[line1[parametert],line2[parametert]] (dz2d1[line1[parametert],line2[parametert]]*linep1[parametert]+dz2d2[line1[parametert],line2[parametert]]*linep2[parametert])(linep2[parametert])^2)*dtdr^2;
+  (*1/2\!\(
+\*SubscriptBox[\(\[Sum]\), \(i, j\)]\(
+\*FractionBox[
+SubscriptBox[\(Z\), \(i\)], 
+SuperscriptBox[
+SubscriptBox[\(Z\), \(j\)], \(2\)]]
+\*FractionBox[
+SubscriptBox[\(dZ\), \(j\)], 
+SubscriptBox[\(d\[Phi]\), \(i\)]]
+\*FractionBox[
+SubscriptBox[\(d\[Phi]\), \(i\)], \(dx\)]
+\*SuperscriptBox[\((
+\*FractionBox[
+SubscriptBox[\(d\[Phi]\), \(j\)], \(dx\)])\), \(2\)]
+\*SuperscriptBox[\((
+\*FractionBox[\(dx\), \(dr\)])\), \(2\)]\)\)*)
+  termz2[parametert_,dtdr_]=1/2 (1/z1[line1[parametert],line2[parametert]] dz1d1[line1[parametert],line2[parametert]]*linep1[parametert]^3+z1[line1[parametert],line2[parametert]]/z2[line1[parametert],line2[parametert]]^2 dz2d1[line1[parametert],line2[parametert]]*linep1[parametert]*linep2[parametert]^2+z2[line1[parametert],line2[parametert]]/z1[line1[parametert],line2[parametert]]^2 dz1d2[line1[parametert],line2[parametert]]*linep2[parametert]*linep1[parametert]^2+1/z2[line1[parametert],line2[parametert]] dz2d2[line1[parametert],line2[parametert]]*linep2[parametert]^3)*dtdr^2;
+  (*-\!\(
+\*SubscriptBox[\(\[Sum]\), \(i\)]\(
+\*SubscriptBox[\(Z\), \(i\)]
+\*FractionBox[
+SubscriptBox[\(d\[Phi]\), \(i\)], \(dx\)]
+\*FractionBox[\(\[PartialD]Veff\), \(\[PartialD]
+\*SubscriptBox[\(\[Phi]\), \(i\)]\)]\)\)*)
+  termv[parametert_]=-(z1[line1[parametert],line2[parametert]]*linep1[parametert]*dvscaled1[line1[parametert],line2[parametert]]+z2[line1[parametert],line2[parametert]]*linep2[parametert]*dvscaled2[line1[parametert],line2[parametert]]);
+  
+  
+  thexmax=parametert/.FindRoot[termv[parametert]==0,{parametert,truevacuum},AccuracyGoal->20,PrecisionGoal->20];
+  parameterx=(thexmax+falsevacuum)/2;
+  dxdr=2derivativeaccuracy;
+  weib=1;
+  weim=1;
+  
+  (*Print[truevacuum];
+  Print[thexmax];*)
+  While[(Abs[parameterx-falsevacuum]>=fieldaccuracy||Abs[dxdr]>=derivativeaccuracy)&&Log[2,weib+weim]<=times,
+  
+  parameterx0=(weib*(thexmax+falsevacuum)/2+weim*thexmax)/(weib+weim);
+  parameterx=parameterx0;
+  rho=0;
+  dxdr=0;
+  ddxdr=-termv[parameterx];
+  (*fieldinfo1={{{rho,z1[line1[parameterx],line2[parameterx]]},{rho,z2[line1[parameterx],line2[parameterx]]}}};*)
+  (*mmm=0;*)
+  
+  (*Print[{dxdr*sign<=0,parameterx-falsevacuum>=0,parameterx<thexmax,0.95*parameterx0<parameterx<thexmax,parameterx==thexmax,parameterx>thexmax}];
+  Print[parameterx0];*)
+    While[(dxdr*sign<=0&&parameterx-falsevacuum>=0&&parameterx<thexmax)||0.95*parameterx0<parameterx<thexmax,
+      crho=rho;
+      cparameterx=parameterx;
+      cdxdr=dxdr;
+      cddxdr=ddxdr;
+      (*If[mmm<=5,Print["x",parameterx,"x'",dxdr,"x''",ddxdr,"tr",-termr[crho,cdxdr],"tz1",-termz1[cparameterx,cdxdr],"tz2",-termz2[cparameterx,cdxdr],"tv",-termv[cparameterx]]];*)
+      rho=crho+dr;
+      parameterx=cparameterx+cdxdr*dr;
+      dxdr=cdxdr+cddxdr*dr;
+      ddxdr=-termr[crho,cdxdr]-termz1[cparameterx,cdxdr]-termz2[cparameterx,cdxdr]-termv[cparameterx]
+      (*AppendTo[fieldinfo1,{{rho,z1[line1[parameterx],line2[parameterx]]},{rho,z2[line1[parameterx],line2[parameterx]]}}];*)
+      (*mmm++;*);
+    ];
+  (*Print[{dxdr*sign<=0,parameterx-falsevacuum>=0,parameterx<thexmax,0.95*parameterx0<parameterx<thexmax,parameterx==thexmax,parameterx>thexmax}];
+  Print[ListPlot[Transpose[fieldinfo1],PlotRange\[Rule]All]];*)
+  If[dxdr*sign>0,
+    weib=2weib-1;weim=2weim+1;,
+    weib=2weib+1;weim=2weim-1;
+    ];
+    (*Print[parameterx," ",dxdr," ",ddxdr," ",mmm];
+    Print[" "];*)
+  ];
+  
+  parameterx=parameterx0;
+  rho=0;
+  dxdr=0;
+  ddxdr=-termv[parameterx];
+  fieldinfo={{0,parameterx0,0}};
+  (*Print[parameterx0];
+  Print[{dxdr*sign<=0,parameterx-falsevacuum>=0,parameterx<thexmax,0.95*parameterx0<parameterx<thexmax,parameterx==thexmax,parameterx>thexmax}];*)
+  (*mmm=0;*)
+  While[(dxdr*sign<=0&&parameterx-falsevacuum>=0&&parameterx<thexmax)||0.95*parameterx0<parameterx<thexmax,
+    crho=rho;
+    cparameterx=parameterx;
+    cdxdr=dxdr;
+    cddxdr=ddxdr;
+      
+    rho=crho+dr;
+    parameterx=cparameterx+cdxdr*dr;
+    dxdr=cdxdr+cddxdr*dr;
+    ddxdr=-termr[crho,cdxdr]-termz1[cparameterx,cdxdr]-termz2[cparameterx,cdxdr]-termv[cparameterx];
+    AppendTo[fieldinfo,{rho,parameterx,dxdr}];
+    (*mmm++;*)
+  ];
+  (*Print[parameterx," ",dxdr," ",ddxdr," ",mmm];*)
+  scalealpha=Sqrt[bigv];
+  
+  If[Log[2,weib+weim]>times,convergence=False,convergence=True];
+  (*Print[convergence];*)
+  Return[{dr,fieldinfo,convergence}]
+];
+
+
+CalculateTheAction2[dimension_,dr_,fieldinfos_,vscaled_,{z1_,z2_},{line1_,line2_},{linep1_,linep2_}]:=
+(2 \[Pi]^(dimension/2))/Gamma[dimension/2]*dr*Sum[fieldinfos[[i,1]]^(dimension-1) ((1/(2z1[line1[fieldinfos[[i,2]]],line2[fieldinfos[[i,2]]]]) linep1[fieldinfos[[i,2]]]^2+1/(2z2[line1[fieldinfos[[i,2]]],line2[fieldinfos[[i,2]]]]) linep2[fieldinfos[[i,2]]]^2)fieldinfos[[i,3]]^2+vscaled[line1[fieldinfos[[i,2]]],line2[fieldinfos[[i,2]]]]),{i,Length[fieldinfos]}];
+
+
+force2[points_,nofpoints_,dtdr2_,{dvd1_,dvd2_},{z1_,z2_},{{dz1d1_,dz1d2_},{dz2d1_,dz2d2_}}]:=Module[
+{dphis,dts,dphidt,adphidt,ddphis,ddphidt,eddphidt,addphidt,gv1,gv2,zs,gz,dzdt,gvmax,az,fn},
+
+dphis=Delete[points,1]-Delete[points,-1];
+
+dts=Sqrt[Total[Transpose[dphis*dphis]]];
+dphidt=dphis/dts;
+
+adphidt=(Append[dphidt,dphidt[[-1]]]+Prepend[dphidt,dphidt[[1]]])/2;
+
+ddphis=Delete[adphidt,1]-Delete[adphidt,-1];
+ddphidt=ddphis/dts;
+
+addphidt=(Append[ddphidt,ddphidt[[-1]]]+Prepend[ddphidt,ddphidt[[1]]])/2;
+
+gv1=MapThread[dvd1,Transpose[points]];
+gv2=MapThread[dvd2,Transpose[points]];
+
+(*gvmax=Max[Sqrt[gv1*gv1+gv2*gv2]];*)
+gvmax=Max[Abs[{gv1,gv2}]];
+
+fn=Table[
+  {(addphidt[[i,1]]-((dz1d1@@points[[i]])*adphidt[[i,1]]+(dz1d2@@points[[i]])*adphidt[[i,2]])/z1@@points[[i]]*adphidt[[i,1]]+(((dz1d1@@points[[i]])*adphidt[[i,1]]+(dz1d2@@points[[i]])*adphidt[[i,2]])/z1@@points[[i]]*adphidt[[i,1]]^2+((dz2d1@@points[[i]])*adphidt[[i,1]]+(dz2d2@@points[[i]])*adphidt[[i,2]])/z2@@points[[i]]*adphidt[[i,2]]^2)*adphidt[[i,1]]+1/2 (((z1@@points[[i]])(dz1d1@@points[[i]]))/(z1@@points[[i]])^2 adphidt[[i,1]]^2+((z1@@points[[i]])(dz2d1@@points[[i]]))/(z2@@points[[i]])^2 adphidt[[i,2]]^2)-1/2 (((z1@@points[[i]])*(dz1d1@@points[[i]])*adphidt[[i,1]])/(z1@@points[[i]])^2*adphidt[[i,1]]^2+((z2@@points[[i]])*(dz1d2@@points[[i]])*adphidt[[i,2]])/(z1@@points[[i]])^2*adphidt[[i,1]]^2+((z1@@points[[i]])*(dz2d1@@points[[i]])*adphidt[[i,1]])/(z2@@points[[i]])^2*adphidt[[i,2]]^2+((z2@@points[[i]])*(dz2d2@@points[[i]])*adphidt[[i,2]])/(z2@@points[[i]])^2*adphidt[[i,2]]^2)adphidt[[i,1]])*dtdr2[[i]]-(z1@@points[[i]])*(dvd1@@points[[i]])+((z1@@points[[i]])*adphidt[[i,1]]*(dvd1@@points[[i]])+(z2@@points[[i]])*adphidt[[i,2]]*(dvd2@@points[[i]]))*adphidt[[i,1]],
+  (addphidt[[i,2]]-((dz2d1@@points[[i]])*adphidt[[i,1]]+(dz2d2@@points[[i]])*adphidt[[i,2]])/z2@@points[[i]]*adphidt[[i,2]]+(((dz1d1@@points[[i]])*adphidt[[i,1]]+(dz1d2@@points[[i]])*adphidt[[i,2]])/z1@@points[[i]]*adphidt[[i,1]]^2+((dz2d1@@points[[i]])*adphidt[[i,1]]+(dz2d2@@points[[i]])*adphidt[[i,2]])/z2@@points[[i]]*adphidt[[i,2]]^2)*adphidt[[i,2]]+1/2 (((z2@@points[[i]])(dz1d2@@points[[i]]))/(z1@@points[[i]])^2 adphidt[[i,1]]^2+((z2@@points[[i]])(dz2d2@@points[[i]]))/(z2@@points[[i]])^2 adphidt[[i,2]]^2)-1/2 (((z1@@points[[i]])*(dz1d1@@points[[i]])*adphidt[[i,1]])/(z1@@points[[i]])^2*adphidt[[i,1]]^2+((z2@@points[[i]])*(dz1d2@@points[[i]])*adphidt[[i,2]])/(z1@@points[[i]])^2*adphidt[[i,1]]^2+((z1@@points[[i]])*(dz2d1@@points[[i]])*adphidt[[i,1]])/(z2@@points[[i]])^2*adphidt[[i,2]]^2+((z2@@points[[i]])*(dz2d2@@points[[i]])*adphidt[[i,2]])/(z2@@points[[i]])^2*adphidt[[i,2]]^2)adphidt[[i,2]])*dtdr2[[i]]-(z2@@points[[i]])*(dvd2@@points[[i]])+((z1@@points[[i]])*adphidt[[i,1]]*(dvd1@@points[[i]])+(z2@@points[[i]])*adphidt[[i,2]]*(dvd2@@points[[i]]))*adphidt[[i,2]]},
+{i,nofpoints}];
+
+Return[{fn,gvmax}]]
+
+
+step2[points_,nofpoints_,dtdr2_,{dvscaled1_,dvscaled2_},{analyticalz1_,analyticalz2_},{{dz1d1_,dz1d2_},{dz2d1_,dz2d2_}},instepsize_]:=Module[{minstep,stepsize,f1,fmax,fratio,points2,f2,dfmax,nextpoints},
+minstep=10^-6;
+stepsize=instepsize;
+f1=force2[points,nofpoints,dtdr2,{dvscaled1,dvscaled2},{analyticalz1,analyticalz2},{{dz1d1,dz1d2},{dz2d1,dz2d2}}];
+
+fmax=Max[Abs[f1[[1]]]];
+fratio=fmax/f1[[2]];
+While[True,
+  points2=points+f1[[1]]*stepsize*0.5;
+  
+  f2=force2[points2,nofpoints,dtdr2,{dvscaled1,dvscaled2},{analyticalz1,analyticalz2},{{dz1d1,dz1d2},{dz2d1,dz2d2}}];
+  
+  If[stepsize<=minstep,stepsize=minstep;Break[]];
+    dfmax=Max[Abs[f2[[1]]-f1[[1]]]];
+    
+  If[dfmax<fmax*0.1,Break[]];
+    stepsize=stepsize*0.5;
+];
+
+nextpoints=points2+f2[[1]]*stepsize*0.5;
+
+(*Print[ListPlot[{f1[[1]]*stepsize*0.5+f2[[1]]*stepsize*0.5,nextpoints-points}]];
+Print[ListPlot[nextpoints-points]];*)
+Return[{nextpoints,stepsize,fratio}]]
+
+
+defom2[points_,nofpoints_,dtdr2_,{dvscaled1_,dvscaled2_},{analyticalz1_,analyticalz2_},{{dz1d1_,dz1d2_},{dz2d1_,dz2d2_}}]:=Module[{dov,gv1,gv2,gvmax,stepsize,pts,j,k,nextis,fratio},
+
+dov=Norm[Last[points]-First[points]];
+
+gv1=MapThread[dvscaled1,Transpose[points]];
+gv2=MapThread[dvscaled2,Transpose[points]];
+
+gvmax=Max[Sqrt[gv1*gv1+gv2*gv2]];
+(*gvmax=Max[Abs[{gv1,gv2}]];*)
+
+stepsize=0.1*dov/gvmax/nofpoints;
+pts=points;
+j=0;
+k=0;
+fratio=1;
+
+While[j<=500&&fratio>=0.02,j++;
+nextis=step2[pts,nofpoints,dtdr2,{dvscaled1,dvscaled2},{analyticalz1,analyticalz2},{{dz1d1,dz1d2},{dz2d1,dz2d2}},stepsize];
+
+pts=nextis[[1]];
+(*Print[pts];*)
+stepsize=1.5*nextis[[2]];
+fratio=nextis[[3]];
+
+];
+
+If[j<=1,k++];
+
+WriteString["stdout","\:2219"];
+
+Return[{pts,k}]]
+
+
+(* ::Subsubsection:: *)
 (*dbdr*)
 
 
@@ -407,18 +927,23 @@ Return[db]
 
 force[points_,dtdr2_,ddtdr_,z_,dvdf_,dzdf_]:=Module[{n,dphis,dts,dphidt,edphidt,adphidt,ddphis,ddphidt,eddphidt,addphidt,gv,zs,gz,zgv,dbsdlz2,fg,fng,gvmax,fn},
 n=Length[points];
-dphis=Table[points[[i+1]]-points[[i]],{i,n-1}];
-dts=Table[Norm[dphis[[i]]],{i,n-1}];
+(*dphis=Table[points[[i+1]]-points[[i]],{i,n-1}];*)
+dphis=Delete[points,1]-Delete[points,-1];
+(*dts=Table[Norm[dphis[[i]]],{i,n-1}];*)
+dts=Sqrt[Total[Transpose[dphis*dphis]]];
 dphidt=dphis/dts;
-edphidt=Prepend[dphidt,dphidt[[1]]];
+(*edphidt=Prepend[dphidt,dphidt[[1]]];
 AppendTo[dphidt,dphidt[[n-1]]];
-adphidt=(dphidt+edphidt)/2;
+adphidt=(dphidt+edphidt)/2;*)
+adphidt=(Append[dphidt,dphidt[[-1]]]+Prepend[dphidt,dphidt[[1]]])/2;
 (*caculate the average of left and right derivative*)
-ddphis=Table[adphidt[[i+1]]-adphidt[[i]],{i,n-1}];
+(*ddphis=Table[adphidt[[i+1]]-adphidt[[i]],{i,n-1}];*)
+ddphis=Delete[adphidt,1]-Delete[adphidt,-1];
 ddphidt=ddphis/dts;
-eddphidt=Prepend[ddphidt,ddphidt[[1]]];
+(*eddphidt=Prepend[ddphidt,ddphidt[[1]]];
 AppendTo[ddphidt,ddphidt[[n-1]]];
-addphidt=(ddphidt+eddphidt)/2;
+addphidt=(ddphidt+eddphidt)/2;*)
+addphidt=(Append[ddphidt,ddphidt[[-1]]]+Prepend[ddphidt,ddphidt[[1]]])/2;
 (*caculate the average of left and right second derivative*)
 
 gv=MapThread[dvdf,Transpose[points]];
@@ -432,6 +957,7 @@ fg=dtdr2*gz/zs/2-zs*gv;
 (*fng=fg-Diagonal[fg.Transpose[adphidt]]*adphidt;*)(*fastest in this single step, but not in tatal*)
 fng=fg-ArrayReduce[Total,fg*adphidt,2]*adphidt;(*fastest in total*)
 fn=addphidt*dtdr2+fng;
+
 Return[{fn,gvmax}]]
 
 
@@ -486,10 +1012,11 @@ gz=Transpose[(gzr+gzl)/2];
 
 gvmax=Max[Abs[gv]];
 
-fg=-ddtdr*gz/zs/2-zs*gv;
+fg=dtdr2*gz/zs/2-zs*gv;
 
 fng=fg-ArrayReduce[Total,fg*adphidt,2]*adphidt;
 fn=addphidt*dtdr2+fng;
+
 Return[{fn,gvmax}]]
 
 
@@ -562,6 +1089,7 @@ While[j<=500&&fratio>=0.02,j++;
 nextis=step[pts,dtdr2,ddtdr,stepsize,z,dvdf,dzdf];
 
 pts=nextis[[1]];
+(*Print[pts];*)
 stepsize=1.5*nextis[[2]];
 fratio=nextis[[3]];
 ];
@@ -626,7 +1154,7 @@ AnalyticalPotentialAnalyticalRnormalization[potential_, renormalization_, fieldn
                                             barrierbetweenvacuums_, dimension_, 
                                             times_, accuracy_, StepScale_]:=
 Module[{OriginalFunctionOfPotential,OriginalFunctionOfRenormalization,
-  domainl,domainr,barrier,thefield,PotentialAtFalseVacuum,FunctionOfRelativePotential,\[Phi]max,bigv,\[Alpha],NormalizedPotential,
+  domainl,domainr,barrier,thefield,PotentialAtFalseVacuum,FunctionOfRelativePotential,\[Phi]max,bigv,\[Alpha],NormalizedPotential,supercooling,
   InitialFieldAndBigR,FieldAndDerivative,FieldPointsOfR,TheAction,result},
   
   OriginalFunctionOfPotential=Function[thefield,potential/.{fieldname->thefield}];
@@ -634,7 +1162,7 @@ Module[{OriginalFunctionOfPotential,OriginalFunctionOfRenormalization,
   domainl=Min[TrueVacuum, FalseVacuum];
   domainr=Max[TrueVacuum, FalseVacuum];
   barrier=If[barrierbetweenvacuums===Null,thefield/.Last[FindMaximum[{OriginalFunctionOfPotential[thefield],domainl<=thefield<=domainr},thefield]],barrierbetweenvacuums];
-  \[Phi]max=If[Abs[TrueVacuum-barrier]>10Abs[barrier-FalseVacuum],10(barrier-FalseVacuum)+FalseVacuum,TrueVacuum];
+  If[Abs[TrueVacuum-barrier]>10Abs[barrier-FalseVacuum],\[Phi]max=10(barrier-FalseVacuum)+FalseVacuum;supercooling=True,\[Phi]max=TrueVacuum;supercooling=False];
   PotentialAtFalseVacuum=OriginalFunctionOfPotential[FalseVacuum];
   FunctionOfRelativePotential=OriginalFunctionOfPotential[#]-PotentialAtFalseVacuum &;
   bigv=Abs[FunctionOfRelativePotential@\[Phi]max]/0.04;
@@ -646,7 +1174,7 @@ Module[{OriginalFunctionOfPotential,OriginalFunctionOfRenormalization,
   (*Print[t0101[[1]]];*)
   
   InitialFieldAndBigR=FindInitialFieldAndBigR[NormalizedPotential,OriginalFunctionOfRenormalization,\[Phi]max,FalseVacuum,
-                                              barrier,dimension,times, accuracy,StepScale];
+                                              barrier,dimension,times, accuracy,StepScale,supercooling];
   
   
   FieldAndDerivative=(*InitialFieldAndBigR[[1]];*)GetFieldPoints[NormalizedPotential, OriginalFunctionOfRenormalization, \[Phi]max, FalseVacuum, 
@@ -656,8 +1184,8 @@ Module[{OriginalFunctionOfPotential,OriginalFunctionOfRenormalization,
   
   FieldPointsOfR=Transpose[{Transpose[FieldAndDerivative][[1]]/\[Alpha],Transpose[FieldAndDerivative][[2]]}];
   
-  
-  TheAction=CalculateTheAction[NormalizedPotential, OriginalFunctionOfRenormalization,InitialFieldAndBigR[[2]],dimension,FieldAndDerivative]/(\[Alpha]^(dimension-2));
+  TheAction=ParallelSum[Extract[FieldAndDerivative,{q,5}]*((Extract[FieldAndDerivative,{q,1}])^(dimension-1))*(1/(2 OriginalFunctionOfRenormalization[Extract[FieldAndDerivative,{q,2}]])*(Extract[FieldAndDerivative,{q,3}])^2+NormalizedPotential[Extract[FieldAndDerivative,{q,2}]]),{q,InitialFieldAndBigR[[2]]},DistributedContexts-> {"VacuumTunneling`Private`"}]*(2\[Pi]^(dimension/2))/Gamma[dimension/2]/(\[Alpha]^(dimension-2));
+  (*TheAction=CalculateTheAction[NormalizedPotential, OriginalFunctionOfRenormalization,InitialFieldAndBigR[[2]],dimension,FieldAndDerivative]/(\[Alpha]^(dimension-2));*)
   
   result={Interpolation[FieldPointsOfR],Last[FieldAndDerivative][[1]]/\[Alpha],TheAction,InitialFieldAndBigR[[3]]};
   
@@ -674,14 +1202,14 @@ NumbericalPotentialAnalyticalRnormalization[potential_, renormalization_, fieldn
                                             barrierbetweenvacuums_, dimension_, 
                                             times_, accuracy_, StepScale_]:=
 Module[{OriginalExpressionOfPotential,OriginalFunctionOfPotential,AnalyticalFunctionOfPotential,OriginalFunctionOfRenormalization,
-  domainl,domainr,barrier,thefield,PotentialAtFalseVacuum,FunctionOfRelativePotential,\[Phi]max,bigv,\[Alpha],NormalizedPotential,
+  domainl,domainr,barrier,thefield,PotentialAtFalseVacuum,FunctionOfRelativePotential,\[Phi]max,bigv,\[Alpha],NormalizedPotential,supercooling,
   InitialFieldAndBigR,FieldAndDerivative,FieldPointsOfR,TheAction,result},
   domainl=Min[TrueVacuum, FalseVacuum];
   domainr=Max[TrueVacuum, FalseVacuum];
   OriginalExpressionOfPotential[fieldname_?NumericQ]=potential;
   OriginalFunctionOfPotential=Function[thefield,OriginalExpressionOfPotential[thefield]];
   barrier=If[barrierbetweenvacuums===Null,thefield/.Last[FindMaximum[{OriginalFunctionOfPotential[thefield],domainl<thefield<domainr},thefield]],barrierbetweenvacuums];
-  \[Phi]max=If[Abs[TrueVacuum-barrier]>10Abs[barrier-FalseVacuum],10(barrier-FalseVacuum)+FalseVacuum,TrueVacuum];
+  If[Abs[TrueVacuum-barrier]>10Abs[barrier-FalseVacuum],\[Phi]max=10(barrier-FalseVacuum)+FalseVacuum;supercooling=True,\[Phi]max=TrueVacuum;supercooling=False];
   AnalyticalFunctionOfPotential=InterpolationInArea[OriginalFunctionOfPotential,\[Phi]max,FalseVacuum,barrier];
   OriginalFunctionOfRenormalization=Function[thefield,renormalization/.{fieldname->thefield}];
   PotentialAtFalseVacuum=AnalyticalFunctionOfPotential[FalseVacuum];
@@ -691,7 +1219,7 @@ Module[{OriginalExpressionOfPotential,OriginalFunctionOfPotential,AnalyticalFunc
   NormalizedPotential=FunctionOfRelativePotential[#]/bigv &;
   
   InitialFieldAndBigR=FindInitialFieldAndBigR[NormalizedPotential,OriginalFunctionOfRenormalization,\[Phi]max,FalseVacuum,
-                                              barrier,dimension,times, accuracy,StepScale];
+                                              barrier,dimension,times, accuracy,StepScale,supercooling];
   FieldAndDerivative=GetFieldPoints[NormalizedPotential, OriginalFunctionOfRenormalization, \[Phi]max, FalseVacuum, 
                                     barrier, dimension, times, accuracy, StepScale,
                                     {InitialFieldAndBigR[[1]],InitialFieldAndBigR[[2]]}];
@@ -711,13 +1239,13 @@ AnalyticalPotentialNumbericalRnormalization[potential_, renormalization_, fieldn
                                             barrierbetweenvacuums_, dimension_, 
                                             times_, accuracy_, StepScale_]:=
 Module[{OriginalFunctionOfPotential,OriginalFunctionOfRenormalization,OriginalExpressionOfRnormalization,AnalyticalFunctionOfRnormalization,
-  domainl,domainr,barrier,\[Phi]max,thefield,PotentialAtFalseVacuum,FunctionOfRelativePotential,bigv,\[Alpha],NormalizedPotential,
+  domainl,domainr,barrier,\[Phi]max,thefield,PotentialAtFalseVacuum,FunctionOfRelativePotential,bigv,\[Alpha],NormalizedPotential,supercooling,
   InitialFieldAndBigR,FieldAndDerivative,FieldPointsOfR,TheAction,result},
   domainl=Min[TrueVacuum, FalseVacuum];
   domainr=Max[TrueVacuum, FalseVacuum];
   OriginalFunctionOfPotential=Function[thefield,potential/.{fieldname->thefield}];
   barrier=If[barrierbetweenvacuums===Null,thefield/.Last[FindMaximum[{OriginalFunctionOfPotential[thefield],domainl<=thefield<=domainr},thefield]],barrierbetweenvacuums];
-  \[Phi]max=If[Abs[TrueVacuum-barrier]>10Abs[barrier-FalseVacuum],10(barrier-FalseVacuum)+FalseVacuum,TrueVacuum];
+  If[Abs[TrueVacuum-barrier]>10Abs[barrier-FalseVacuum],\[Phi]max=10(barrier-FalseVacuum)+FalseVacuum;supercooling=True,\[Phi]max=TrueVacuum;supercooling=False];
   FunctionOfRelativePotential=OriginalFunctionOfPotential[#]-PotentialAtFalseVacuum &;
   PotentialAtFalseVacuum=OriginalFunctionOfPotential[FalseVacuum];
   FunctionOfRelativePotential=OriginalFunctionOfPotential[#]-PotentialAtFalseVacuum &;
@@ -728,7 +1256,7 @@ Module[{OriginalFunctionOfPotential,OriginalFunctionOfRenormalization,OriginalEx
   \[Alpha]=Sqrt[bigv];
   NormalizedPotential=FunctionOfRelativePotential[#]/bigv &;
   InitialFieldAndBigR=FindInitialFieldAndBigR[NormalizedPotential,AnalyticalFunctionOfRnormalization,\[Phi]max,FalseVacuum,
-                                              barrier,dimension,times,accuracy,StepScale];
+                                              barrier,dimension,times,accuracy,StepScale,supercooling];
   FieldAndDerivative=GetFieldPoints[NormalizedPotential, AnalyticalFunctionOfRnormalization,\[Phi]max,FalseVacuum,
                                     barrier,dimension,times,accuracy,StepScale,
                                     {InitialFieldAndBigR[[1]],InitialFieldAndBigR[[2]]}];
@@ -748,14 +1276,14 @@ Module[{OriginalFunctionOfPotential,OriginalFunctionOfRenormalization,OriginalEx
 NumbericalPotentialNumbericalRnormalization[potential_, renormalization_, fieldname_, TrueVacuum_, FalseVacuum_,
                                             barrierbetweenvacuums_, dimension_, times_, accuracy_, StepScale_]:=
 Module[{OriginalExpressionOfpotential,OriginalFunctionOfPotential,AnalyticalFunctionOfPotential,OriginalExpressionOfRnormalization,OriginalFunctionOfRenormalization,AnalyticalFunctionOfRnormalization,
-  domainl,domainr,barrier,\[Phi]max,thefield,PotentialAtFalseVacuum,FunctionOfRelativePotential,bigv,\[Alpha],NormalizedPotential,
+  domainl,domainr,barrier,\[Phi]max,thefield,PotentialAtFalseVacuum,FunctionOfRelativePotential,bigv,\[Alpha],NormalizedPotential,supercooling,
   InitialFieldAndBigR,FieldAndDerivative,FieldPointsOfR,TheAction,result},
   domainl=Min[TrueVacuum, FalseVacuum];
   domainr=Max[TrueVacuum, FalseVacuum];
   OriginalExpressionOfpotential[fieldname_?NumericQ]=potential;
   OriginalFunctionOfPotential=Function[thefield,OriginalExpressionOfpotential[thefield]];
   barrier=If[barrierbetweenvacuums===Null,thefield/.Last[FindMaximum[{OriginalFunctionOfPotential[thefield],domainl<=thefield<=domainr},thefield]],barrierbetweenvacuums];
-  \[Phi]max=If[Abs[TrueVacuum-barrier]>10Abs[barrier-FalseVacuum],10(barrier-FalseVacuum)+FalseVacuum,TrueVacuum];
+  If[Abs[TrueVacuum-barrier]>10Abs[barrier-FalseVacuum],\[Phi]max=10(barrier-FalseVacuum)+FalseVacuum;supercooling=True,\[Phi]max=TrueVacuum;supercooling=False];
   AnalyticalFunctionOfPotential=InterpolationInArea[OriginalFunctionOfPotential,\[Phi]max,FalseVacuum,barrier];
   
   OriginalExpressionOfRnormalization[fieldname_?NumericQ]=renormalization;
@@ -769,11 +1297,12 @@ Module[{OriginalExpressionOfpotential,OriginalFunctionOfPotential,AnalyticalFunc
   NormalizedPotential=FunctionOfRelativePotential[#]/bigv &;
   
   InitialFieldAndBigR=FindInitialFieldAndBigR[NormalizedPotential,AnalyticalFunctionOfRnormalization,\[Phi]max,FalseVacuum,
-                                              barrier,dimension,times, accuracy, StepScale];
+                                              barrier,dimension,times, accuracy, StepScale, supercooling];
   FieldAndDerivative=GetFieldPoints[NormalizedPotential, AnalyticalFunctionOfRnormalization, \[Phi]max, FalseVacuum, barrier, 
                                     dimension, times, accuracy, StepScale,
                                     {InitialFieldAndBigR[[1]],InitialFieldAndBigR[[2]]}];
   FieldPointsOfR=Transpose[{Transpose[FieldAndDerivative][[1]]/\[Alpha],Transpose[FieldAndDerivative][[2]]}];
+  
   TheAction=CalculateTheAction[NormalizedPotential, AnalyticalFunctionOfRnormalization,InitialFieldAndBigR[[2]],dimension,FieldAndDerivative]/(\[Alpha]^(dimension-2));
   (*bounce=Interpolation[FieldPointsOfR];*)
   result={Interpolation[FieldPointsOfR],Last[FieldAndDerivative][[1]]/\[Alpha],TheAction,InitialFieldAndBigR[[3]]};
@@ -791,7 +1320,7 @@ InterpolationInArea[NumbericalFunction_,TrueVacuum_,FalseVacuum_,barrier_]:=
   n=1000;
   \[Phi]max=If[Abs[TrueVacuum-barrier]>10Abs[barrier-FalseVacuum],10(barrier-FalseVacuum)+FalseVacuum,TrueVacuum];
   dx=(\[Phi]max-FalseVacuum)/n;
-  Functionpts=ParallelTable[Off[NIntegrate::inumr];Quiet[{(i-1)*dx+FalseVacuum,NumbericalFunction[(i-1)*dx+FalseVacuum]}],{i,(n+100)},DistributedContexts-> {"VacuumTunneling`Private`"}];
+  Functionpts=ParallelTable[Off[NIntegrate::inumr];Quiet[{(i-1)*dx+FalseVacuum,NumbericalFunction[(i-1)*dx+FalseVacuum]}],{i,(n+1)},DistributedContexts-> {"VacuumTunneling`Private`"}];
   
   ifun1=Interpolation[Cases[Functionpts,{_,_?NumericQ}]];
   
@@ -804,8 +1333,9 @@ InterpolationInArea[NumbericalFunction_,TrueVacuum_,FalseVacuum_,barrier_]:=
 
 
 FindInitialFieldAndBigR[AnalyticalPotential_, AnalyticalRenormalization_, TrueVacuum_, FalseVacuum_, barrier_,
-                        dimension_, times_, accuracy_,StepScale_]:=
-  Module[{afield,vp,zp,fvp,fzp,\[Phi]max,sign,absolutefieldaccuracy,absolutederivativeaccuracy,basicdr,dr,weib,weim,\[Phi]0,\[Phi],d\[Phi],r,c\[Phi],cd\[Phi],dd\[Phi],j,convergence},
+                        dimension_, times_, accuracy_,StepScale_,supercooling_]:=
+  Module[{(*$MinPrecision = 50, $MaxPrecision = 50,*)afield,vp,zp,fvp,fzp,\[Phi]max,sign,precision,absolutefieldaccuracy,absolutederivativeaccuracy,basicdr,dr,weib,weim,\[Phi]0,\[Phi],d\[Phi],r,c\[Phi],cd\[Phi],dd\[Phi],j,convergence},
+  
   vp[afield_]=AnalyticalPotential'[afield];
   zp[afield_]=AnalyticalRenormalization'[afield];
   fvp=Function[afield,vp[afield]];
@@ -813,9 +1343,10 @@ FindInitialFieldAndBigR[AnalyticalPotential_, AnalyticalRenormalization_, TrueVa
   
   \[Phi]max=TrueVacuum;
   sign=Sign[\[Phi]max-FalseVacuum];
+  precision=Ceiling[Log[10,(2^times)/Abs[TrueVacuum-FalseVacuum]]];
   
-  If[fvp[\[Phi]max]*sign>0,
-     \[Phi]max=thefield/.FindRoot[fvp[thefield]==0,{thefield,\[Phi]max}]];
+  If[supercooling==False,
+     \[Phi]max=thefield/.FindRoot[fvp[thefield]==0,{thefield,0.99TrueVacuum},PrecisionGoal->20,AccuracyGoal->20]];
   (*to prevent wrong true vacuum, which makes the field rolling far away from false vacuum.*)
   
   
@@ -829,6 +1360,7 @@ FindInitialFieldAndBigR[AnalyticalPotential_, AnalyticalRenormalization_, TrueVa
   dr=basicdr * StepScale;
 
   While[(Abs[\[Phi]-FalseVacuum]>=absolutefieldaccuracy||Abs[d\[Phi]]>=absolutederivativeaccuracy)&&Log[2,weib+weim]<=times,
+  
   \[Phi]0=(weib barrier+weim \[Phi]max)/(weib+weim);
   r=0.;
   \[Phi]=\[Phi]0;
@@ -847,6 +1379,7 @@ FindInitialFieldAndBigR[AnalyticalPotential_, AnalyticalRenormalization_, TrueVa
   cd\[Phi]=d\[Phi];
   dd\[Phi]=AnalyticalRenormalization[c\[Phi]]*fvp[c\[Phi]]+1/2 fzp[c\[Phi]]/AnalyticalRenormalization[c\[Phi]] cd\[Phi]^2-(dimension-1)/r cd\[Phi];
   j++;
+  
   ];
   
   weib=If[d\[Phi] sign<0,2weib+1,2weib-1];
@@ -855,6 +1388,7 @@ FindInitialFieldAndBigR[AnalyticalPotential_, AnalyticalRenormalization_, TrueVa
   ];
   
   If[Log[2,weib+weim]>times,convergence=False,convergence=True];
+  
   Return[{\[Phi]0,j,convergence}]
   ];
 
