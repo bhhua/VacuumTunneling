@@ -4,11 +4,11 @@
 
 This package is designed to evaluate such an action
 
-$$S_E=\frac{2\pi^{\frac{D}{2}}}{\Gamma(\frac{D}{2})} \int_{0}^{\infty} dr r^{D-1} \left[\frac{Z_{\sigma}^{-1}}{2} \left(\frac{d\sigma}{dr}\right)^2 +V_{\mathrm{eff}}(\sigma)\right],$$
+$$S_E=\frac{2\pi^{\frac{D}{2}}}{\Gamma(\frac{D}{2})}\int_0^\infty dr\,r^{D-1}\left[\frac{Z_i^{-1}}{2}\left(\frac{d\phi_i}{dr}\right)^2+V_{eff}(\overrightarrow{\phi} )\right],$$
 
 whose corrsponding equation of motion reads
 
-$$\frac{d^2 \sigma}{dr^2}+\frac{D-1}{r} \frac{d\sigma}{dr}-\frac{1}{2}\frac{\partial \mathrm{log} Z_{\sigma}}{\partial \sigma} \left(\frac{d\sigma}{dr}\right)^2 = Z_{\sigma}\frac{\partial V_{eff}}{\partial \sigma}.$$
+$$\frac{d^2\phi_i}{dr^2}+\frac{D-1}{r}\frac{d\phi_i}{dr}-\frac{1}{Z_i}\frac{dZ_i}{dr}\frac{d\phi_i}{dr}+\frac{1}{2}\sum_j\frac{Z_i}{Z_j^2}\frac{\partial Z_j}{\partial \phi_i}\left(\frac{d\phi_j}{dr}\right)^2-Z_i\frac{\partial V_{eff}}{\partial \phi_i}=0.$$
 
 For more details, see [arXiv:2501.15236](https://arxiv.org/abs/2501.15236 "VacuumTunneling: A package to solve bonce equation with renormalization factor")
 
