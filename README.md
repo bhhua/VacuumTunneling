@@ -4,7 +4,7 @@
 
 This package is designed to evaluate such an action
 
-$$S_E=\frac{2\pi^{\frac{D}{2}}}{\Gamma\left(\frac{D}{2}\right)}\int_0^\infty dr\,r^{D-1}\left[\frac{Z_i^{-1}}{2}\left(\frac{d\phi_i}{dr}\right)^2+V_{eff}(\overrightarrow{\phi} )\right],$$
+$$S_E=\frac{2\pi^{\frac{D}{2}}}{\Gamma\left(\frac{D}{2}\right)}\int_0^\infty dr~r^{D-1}\left[\frac{Z_i^{-1}}{2}\left(\frac{d\phi_i}{dr}\right)^2+V_{eff}(\overrightarrow{\phi} )\right],$$
 
 whose corrsponding equation of motion reads
 
