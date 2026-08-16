@@ -167,7 +167,7 @@ resultfunction[x_]=Which[x=="Action",BE,
 Return[resultfunction];];
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*T1*)
 
 
@@ -198,7 +198,7 @@ T1[potential_, renormalization_, fields_, Vacuum1_, Vacuum2_,
 ];
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*T2*)
 
 
@@ -231,9 +231,9 @@ s=T1[vt[t],zt[t],t,dov,0,
     Dimension, BarrierBetweenVacuums,
     TimesToFind, RelativeAccuracy, StepScale, 
     NumbericalPotential, NumbericalRenormalization];
-Print[s[[3]]/550000];
+(*Print[s[[3]]/550000];
 Print[Plot[s[[1]][x],{x,0,s[[2]]}]];
-Print[s[[1]]];
+Print[s[[1]]];*)
 tmaxfn=100000;
 amaxfn=\[Infinity];
 k=0;
@@ -284,9 +284,9 @@ s=T1[vt[t],zt[t],t,Last[tls],0.,
      Dimension, BarrierBetweenVacuums,
      TimesToFind, RelativeAccuracy, StepScale,
      NumbericalPotential, NumbericalRenormalization];
-Print[s[[3]]/550000];
+(*Print[s[[3]]/550000];
 Print[Plot[s[[1]][x],{x,0,s[[2]]}]];
-Print[s[[1]]];
+Print[s[[1]]];*)
 tps=dbdr[s[[1]],tls,s[[2]]];
 tp2=tps[[1]]*tps[[1]];
 tpp=tps[[2]];
@@ -309,9 +309,9 @@ s=T1[vt[t],zt[t],t,Last[tls],0.,
      Dimension, BarrierBetweenVacuums,
      TimesToFind, RelativeAccuracy, StepScale,
      NumbericalPotential, NumbericalRenormalization];
-Print[s[[3]]/550000];
+(*Print[s[[3]]/550000];
 Print[Plot[s[[1]][x],{x,0,s[[2]]}]];
-Print[s[[1]]];
+Print[s[[1]]];*)
 tps=dbdr[s[[1]],tls,s[[2]]];
 tp2=tps[[1]]*tps[[1]];
 tpp=tps[[2]];
@@ -339,9 +339,9 @@ s=T1[vt[t],zt[t],t,Last[tls],0.,
      Dimension, BarrierBetweenVacuums,
      TimesToFind, RelativeAccuracy, StepScale,
      NumbericalPotential, NumbericalRenormalization];
-Print[s[[3]]/550000];
+(*Print[s[[3]]/550000];
 Print[Plot[s[[1]][x],{x,0,s[[2]]}]];
-Print[s[[1]]];
+Print[s[[1]]];*)
 tps=dbdr[s[[1]],tls,s[[2]]];
 tp2=tps[[1]]*tps[[1]];
 tpp=tps[[2]];
@@ -361,7 +361,7 @@ WriteString["stdout","\[EmptyCircle]"];
 Return[{s[[1]],fr,s[[3]]}]]
 
 
-(* ::Subsubsection::Closed:: *)
+(* ::Subsubsection:: *)
 (*nT2*)
 
 
