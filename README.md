@@ -59,8 +59,9 @@ Se = a[[2]]
 Input the 2-field effective potential and renormalization factor and find the true and false vacua:
 
 ```
-V2[h_, s_] := 0.1 h^4 -100 h^2 + 0.3 s^4 -60 s^2 +3 h^2 s^2;
-Z2[h_, s_] := 0.2 / (h + 1) + 0.1 / (s + 1) + 0.15 / ((h + 1) (s + 1));
+V2[h_, s_] := 0.1 h^4 - 100 h^2 + 0.3 s^4 - 60 s^2 + 3 h^2 s^2;
+Zh[h_, s_] := -0.01 (h^2 + 2.3 s^2) + 7;
+Zs[h_, s_] := -0.015 (h^2 + 2.3 s^2) + 11;
 fv2 = {x, y} /. Last[FindMinimum[V2[x, y], {{x, 0}, {y, 10}}]]
 tv2 = {x, y} /. Last[FindMinimum[V2[x, y], {{x, 22.4}, {y, 0}}]]
 ```
@@ -69,14 +70,14 @@ Call the `Tunneling` function, note that the field names and the true/false vacu
 supposed to be inputted to evaluate the tunneling without a renormalization factor.
 
 ```
-b1 = Tunneling[V2[x, y], 1, {x, y}, tv2, fv2]
-b2 = Tunneling[V2[x, y], Z2[x, y], {x, y}, tv2, fv2]
+b1 = Tunneling[V2[x, y], {1, 1}, {x, y}, tv2, fv2]
+b2 = Tunneling[V2[x, y], {Zh[x, y], Zs[x, y]}, {x, y}, tv2, fv2]
 ```
 
 Show the bounce of each field by `Plot`:
 
 ```
-Plot[{b2[[1]][x][[1]], b2[[1]][x][[2]]}, {x, 0, 2.24}]
+Plot[{b2[[1]][x][[1]], b2[[1]][x][[2]]}, {x, 0, 0.28}]
 ```
 
 <img src="https://github.com/bhhua/VacuumTunneling/blob/main/images/2doriginplot.png" width="300px">
@@ -84,11 +85,12 @@ Plot[{b2[[1]][x][[1]], b2[[1]][x][[2]]}, {x, 0, 2.24}]
 Show the path by `ParametricPlot`:
 
 ```
-Show[
-ContourPlot[V2[x, y], {x, -1, 24}, {y, -1, 12}, Contours -> 50, ContourShading -> None, Epilog -> {Red, PointSize[Large], Point[{tv2, fv2}]}],
-ParametricPlot[b2[[1]][x], {x, 0, 2.24}],
-ParametricPlot[b1[[1]][x], {x, 0, 0.631}, PlotStyle -> {Orange, Dashed}]
-]
+Show[ContourPlot[V2[x, y], {x, -1, 24}, {y, -1, 12}, Contours -> 50, 
+  ContourShading -> None, 
+  Epilog -> {Red, PointSize[Large], Point[{tv2, fv2}]}], 
+ ParametricPlot[b1[[1]][x], {x, 0, 0.582}], 
+ ParametricPlot[b2[[1]][x], {x, 0, 0.228}, 
+  PlotStyle -> {Orange, Dashed}]]
 ```
 
 <img src="https://github.com/bhhua/VacuumTunneling/blob/main/images/2doriginpath.png" width="300px">
